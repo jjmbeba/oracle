@@ -1,0 +1,1 @@
+-- Baseline migration intentionally contains no SQL.

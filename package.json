@@ -10,7 +10,10 @@
     "type-check": "pnpm -r --if-present type-check",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
-    "format": "pnpm -r --if-present format"
+    "format": "pnpm -r --if-present format",
+    "db:generate": "pnpm --filter @oracle/db db:generate",
+    "db:migrate": "pnpm --filter @oracle/db db:migrate",
+    "db:check": "pnpm --filter @oracle/db db:check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
