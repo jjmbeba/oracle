@@ -1,0 +1,23 @@
+{
+  "name": "@oracle/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint src",
+    "test": "vitest run src",
+    "format": "oxfmt -c ../../.oxfmt.json src"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.53.0",
+    "oxlint": "^1.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  }
+}
