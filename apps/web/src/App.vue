@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { fetchApiHealth, type ApiHealth } from "./api";
+import { computed } from "vue";
+import type { ApiHealth } from "./features/health/api";
+import { useApiHealthQuery } from "./features/health/queries";
 
 type HealthState = "checking" | "connected" | "unavailable";
 
-const health = ref<ApiHealth | null>(null);
-const healthState = ref<HealthState>("checking");
+const apiHealthQuery = useApiHealthQuery();
+const health = computed<ApiHealth | null>(() => apiHealthQuery.data.value ?? null);
+const healthState = computed<HealthState>(() => {
+  if (apiHealthQuery.isSuccess.value && health.value) {
+    return "connected";
+  }
+
+  if (apiHealthQuery.isError.value) {
+    return "unavailable";
+  }
+
+  return "checking";
+});
 
 const healthLabel = computed(() => {
   if (healthState.value === "connected") {
@@ -17,15 +29,6 @@ const healthLabel = computed(() => {
   }
 
   return "Checking API";
-});
-
-onMounted(async () => {
-  try {
-    health.value = await fetchApiHealth();
-    healthState.value = "connected";
-  } catch {
-    healthState.value = "unavailable";
-  }
 });
 </script>
 
