@@ -1,4 +1,5 @@
 export const defaultPlaceholderIntervalMs = 5_000;
+export const maxIntervalMs = 2_147_483_647;
 
 export function parsePlaceholderIntervalMs(
   value: string | undefined,
@@ -10,7 +11,7 @@ export function parsePlaceholderIntervalMs(
 
   const parsedValue = Number(value);
 
-  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0 || parsedValue > maxIntervalMs) {
     return fallbackMs;
   }
 

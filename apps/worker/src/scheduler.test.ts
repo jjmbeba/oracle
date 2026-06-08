@@ -39,7 +39,7 @@ describe("worker scheduler", () => {
 
     const { logger, records } = createTestLogger();
     const run = vi.fn();
-    
+
     const scheduler = createScheduler({
       logger,
       now: () => 25,
@@ -144,5 +144,27 @@ describe("worker scheduler", () => {
     vi.advanceTimersByTime(1000);
 
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate job names", async () => {
+    vi.useFakeTimers();
+    const { logger } = createTestLogger();
+    const scheduler = createScheduler({ logger });
+
+    scheduler.registerIntervalJob({
+      name: "placeholder",
+      intervalMs: 1000,
+      run: vi.fn(),
+    });
+
+    expect(() => {
+      scheduler.registerIntervalJob({
+        name: "placeholder",
+        intervalMs: 2000,
+        run: vi.fn(),
+      });
+    }).toThrow("Scheduled job already registered: placeholder");
+
+    await scheduler.stop();
   });
 });

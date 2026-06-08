@@ -12,6 +12,8 @@ export type SignalSource = {
   once(signal: WorkerSignal, listener: () => void): void;
 };
 
+type ExitProcess = (code: 0 | 1) => void;
+
 export type StartWorkerOptions = {
   env?: NodeJS.ProcessEnv;
   logger?: WorkerLogger;
@@ -55,14 +57,34 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
     logger.info("worker.shutdown.completed");
   };
 
-  signals.once("SIGINT", () => {
-    void shutdown();
-  });
-  signals.once("SIGTERM", () => {
-    void shutdown();
-  });
+  const handleSignal = (): void => {
+    void handleSignalShutdown({
+      shutdown,
+      logger,
+      exitProcess: (code) => {
+        process.exit(code);
+      },
+    });
+  };
+
+  signals.once("SIGINT", handleSignal);
+  signals.once("SIGTERM", handleSignal);
 
   return {
     shutdown,
   };
+}
+
+export async function handleSignalShutdown(options: {
+  shutdown(): Promise<void>;
+  logger: WorkerLogger;
+  exitProcess: ExitProcess;
+}): Promise<void> {
+  try {
+    await options.shutdown();
+    options.exitProcess(0);
+  } catch (error: unknown) {
+    options.logger.error("worker.shutdown.failed", { error });
+    options.exitProcess(1);
+  }
 }

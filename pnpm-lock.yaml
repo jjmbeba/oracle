@@ -67,6 +67,9 @@ importers:
         specifier: ^3.5.0
         version: 3.5.35(typescript@5.9.3)
     devDependencies:
+      '@types/node':
+        specifier: ^24.13.1
+        version: 24.13.1
       oxfmt:
         specifier: ^0.53.0
         version: 0.53.0

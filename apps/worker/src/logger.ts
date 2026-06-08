@@ -87,7 +87,7 @@ function copyDefinedFields(fields: WorkerLogFields): Partial<WorkerLogRecord> {
   }
 
   if (fields.metadata !== undefined) {
-    recordFields.metadata = fields.metadata;
+    recordFields.metadata = sanitizeMetadata(fields.metadata);
   }
 
   return recordFields;
@@ -98,7 +98,7 @@ export function serializeError(error: unknown): SerializedError {
     return {
       name: error.name,
       message: error.message,
-      ...(error.stack === undefined ? {} : { stack: error.stack }),
+      stack: error.stack,
     };
   }
 
@@ -106,4 +106,44 @@ export function serializeError(error: unknown): SerializedError {
     name: "NonError",
     message: String(error),
   };
+}
+
+export function sanitizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+  const seen = new WeakSet<object>();
+
+  try {
+    const serialized = JSON.stringify(metadata, (_key, value: unknown) => {
+      if (typeof value === "bigint") {
+        return value.toString();
+      }
+
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) {
+          return "[Circular]";
+        }
+
+        seen.add(value);
+      }
+
+      return value;
+    });
+
+    if (serialized === undefined) {
+      return { unserializable: true };
+    }
+
+    const parsed = JSON.parse(serialized) as unknown;
+
+    if (isRecord(parsed)) {
+      return parsed;
+    }
+  } catch {
+    return { unserializable: true };
+  }
+
+  return { unserializable: true };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { startWorker } from "./worker";
 
-export { defaultPlaceholderIntervalMs, parsePlaceholderIntervalMs } from "./config";
+export { defaultPlaceholderIntervalMs, maxIntervalMs, parsePlaceholderIntervalMs } from "./config";
 export { createWorkerLogger, serializeError } from "./logger";
 export { createScheduler } from "./scheduler";
 export { startWorker } from "./worker";

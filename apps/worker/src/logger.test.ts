@@ -4,7 +4,7 @@ import { createWorkerLogger } from "./logger";
 describe("worker logger", () => {
   it("emits parseable JSON records with stable fields", () => {
     const messages: string[] = [];
-    
+
     const logger = createWorkerLogger({
       sink: {
         info(message) {
@@ -62,6 +62,90 @@ describe("worker logger", () => {
       error: {
         name: "Error",
         message: "boom",
+      },
+    });
+  });
+
+  it("sanitizes circular metadata", () => {
+    const messages: string[] = [];
+    const logger = createWorkerLogger({
+      sink: {
+        info(message) {
+          messages.push(message);
+        },
+        error() {
+          return;
+        },
+      },
+      now: () => new Date("2026-06-08T00:00:00.000Z"),
+    });
+    const metadata: Record<string, unknown> = { job: "placeholder" };
+    metadata.self = metadata;
+
+    logger.info("job.success", { metadata });
+
+    expect(JSON.parse(messages[0] ?? "")).toMatchObject({
+      metadata: {
+        job: "placeholder",
+        self: "[Circular]",
+      },
+    });
+  });
+
+  it("sanitizes bigint metadata", () => {
+    const messages: string[] = [];
+    const logger = createWorkerLogger({
+      sink: {
+        info(message) {
+          messages.push(message);
+        },
+        error() {
+          return;
+        },
+      },
+      now: () => new Date("2026-06-08T00:00:00.000Z"),
+    });
+
+    logger.info("job.success", {
+      metadata: {
+        count: 9007199254740993n,
+      },
+    });
+
+    expect(JSON.parse(messages[0] ?? "")).toMatchObject({
+      metadata: {
+        count: "9007199254740993",
+      },
+    });
+  });
+
+  it("falls back when metadata cannot be serialized", () => {
+    const messages: string[] = [];
+    const logger = createWorkerLogger({
+      sink: {
+        info(message) {
+          messages.push(message);
+        },
+        error() {
+          return;
+        },
+      },
+      now: () => new Date("2026-06-08T00:00:00.000Z"),
+    });
+
+    logger.info("job.success", {
+      metadata: {
+        bad: {
+          toJSON() {
+            throw new Error("cannot serialize");
+          },
+        },
+      },
+    });
+
+    expect(JSON.parse(messages[0] ?? "")).toMatchObject({
+      metadata: {
+        unserializable: true,
       },
     });
   });

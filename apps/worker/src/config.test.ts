@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultPlaceholderIntervalMs, parsePlaceholderIntervalMs } from "./config";
+import { defaultPlaceholderIntervalMs, maxIntervalMs, parsePlaceholderIntervalMs } from "./config";
 
 describe("worker config", () => {
   it("uses a valid placeholder interval", () => {
@@ -20,5 +20,11 @@ describe("worker config", () => {
 
   it("falls back when the interval is negative", () => {
     expect(parsePlaceholderIntervalMs("-1")).toBe(defaultPlaceholderIntervalMs);
+  });
+
+  it("falls back when the interval is above the timer maximum", () => {
+    expect(parsePlaceholderIntervalMs(String(maxIntervalMs + 1))).toBe(
+      defaultPlaceholderIntervalMs,
+    );
   });
 });

@@ -37,7 +37,7 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
 
     state.running = true;
     const startedAt = now();
-    
+
     state.inFlight = Promise.resolve()
       .then(() => job.run())
       .then(() => {

@@ -1,10 +1,11 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
 import type { Scheduler } from "./scheduler";
-import { startWorker, type SignalSource, type WorkerSignal } from "./worker";
+import { handleSignalShutdown, startWorker, type SignalSource, type WorkerSignal } from "./worker";
 
 type WorkerEventRecord = {
   event: string;
+  error?: unknown;
   metadata?: Record<string, unknown>;
 };
 
@@ -60,7 +61,7 @@ describe("worker runtime", () => {
     ]);
   });
 
-  it("stops the scheduler and logs shutdown lifecycle", async () => {
+  it("stops the scheduler and logs direct shutdown lifecycle", async () => {
     const { logger, records } = createTestLogger();
     let resolveStop: (() => void) | undefined;
     const scheduler: Scheduler = {
@@ -74,13 +75,13 @@ describe("worker runtime", () => {
     };
     const signals = new SignalEmitter();
 
-    startWorker({
+    const runtime = startWorker({
       logger,
       scheduler,
       signals,
     });
 
-    signals.emit("SIGTERM");
+    const shutdown = runtime.shutdown();
     await Promise.resolve();
 
     expect(records.map((record) => record.event)).toEqual([
@@ -89,13 +90,61 @@ describe("worker runtime", () => {
     ]);
 
     resolveStop?.();
-    await Promise.resolve();
-    await Promise.resolve();
+    await shutdown;
 
     expect(records.map((record) => record.event)).toEqual([
       "worker.started",
       "worker.shutdown.started",
       "worker.shutdown.completed",
     ]);
+  });
+
+  it("propagates scheduler stop failures during direct shutdown", async () => {
+    const { logger } = createTestLogger();
+    const error = new Error("stop failed");
+    const scheduler: Scheduler = {
+      registerIntervalJob: vi.fn(),
+      stop: vi.fn(() => Promise.reject(error)),
+    };
+    const runtime = startWorker({
+      logger,
+      scheduler,
+      signals: new SignalEmitter(),
+    });
+
+    await expect(runtime.shutdown()).rejects.toThrow(error);
+  });
+
+  it("exits zero after successful signal shutdown", async () => {
+    const { logger } = createTestLogger();
+    const exitProcess = vi.fn();
+
+    await handleSignalShutdown({
+      shutdown: vi.fn(() => Promise.resolve()),
+      logger,
+      exitProcess,
+    });
+
+    expect(exitProcess).toHaveBeenCalledWith(0);
+  });
+
+  it("logs failure and exits one after failed signal shutdown", async () => {
+    const { logger, records } = createTestLogger();
+    const exitProcess = vi.fn();
+    const error = new Error("stop failed");
+
+    await handleSignalShutdown({
+      shutdown: vi.fn(() => Promise.reject(error)),
+      logger,
+      exitProcess,
+    });
+
+    expect(records).toEqual([
+      {
+        event: "worker.shutdown.failed",
+        error,
+      },
+    ]);
+    expect(exitProcess).toHaveBeenCalledWith(1);
   });
 });
