@@ -3,6 +3,6 @@ import { createStartupMessage } from "./index";
 
 describe("worker shell", () => {
   it("has a startup message", () => {
-    expect(createStartupMessage()).toContain("Oracle worker");
+    expect(createStartupMessage()).toBe("Oracle worker shell ready");
   });
 });

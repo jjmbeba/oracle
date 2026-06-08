@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc --build --noEmit && vite build",
     "type-check": "vue-tsc --build --noEmit",
-    "lint": "oxlint src/main.ts src/env.d.ts src/smoke.test.ts vite.config.ts",
+    "lint": "oxlint src vite.config.ts",
     "test": "vitest run src",
     "format": "oxfmt -c ../../.oxfmt.json src vite.config.ts index.html"
   },
