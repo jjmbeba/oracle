@@ -1,0 +1,26 @@
+{
+  "name": "@oracle/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build --noEmit && vite build",
+    "type-check": "vue-tsc --build --noEmit",
+    "lint": "oxlint src/main.ts src/env.d.ts src/smoke.test.ts vite.config.ts",
+    "test": "vitest run src",
+    "format": "oxfmt -c ../../.oxfmt.json src vite.config.ts index.html"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "vite": "^8.0.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.53.0",
+    "oxlint": "^1.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0",
+    "vue-tsc": "^3.1.0"
+  }
+}
