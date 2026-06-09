@@ -1,3 +1,12 @@
+export { createSignalDedupeMetadata } from "./dedupe";
+export type {
+  ConservativeFingerprintSignalDedupeInput,
+  ProviderDerivedSignalDedupeInput,
+  ProviderNativeSignalDedupeInput,
+  SignalDedupeInput,
+  SignalDedupeMetadata,
+  SignalDedupeStrategy,
+} from "./dedupe";
 export {
   normalizedSignalSchema,
   positionSchema,
