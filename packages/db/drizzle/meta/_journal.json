@@ -8,6 +8,13 @@
       "when": 1780958655603,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781026303343,
+      "tag": "0001_narrow_overlord",
+      "breakpoints": true
     }
   ]
 }

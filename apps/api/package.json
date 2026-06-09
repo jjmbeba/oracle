@@ -9,11 +9,15 @@
     "type-check": "tsc --noEmit -p tsconfig.json",
     "lint": "oxlint src",
     "test": "vitest run src",
+    "auth:smoke": "tsx src/auth-smoke.ts",
     "format": "oxfmt -c ../../.oxfmt.json src"
   },
   "dependencies": {
-    "@oracle/domain": "workspace:*",
     "@hono/node-server": "^1.19.0",
+    "@oracle/db": "workspace:*",
+    "@oracle/domain": "workspace:*",
+    "better-auth": "^1.6.15",
+    "dotenv": "^17.2.3",
     "hono": "^4.10.0"
   },
   "devDependencies": {

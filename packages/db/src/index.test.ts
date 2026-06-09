@@ -1,14 +1,18 @@
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import {
-  checkDatabaseConnection,
-  createDatabaseConnection,
-  schema,
-} from "./index";
+import { checkDatabaseConnection, createDatabaseConnection, schema } from "./index";
 
 describe("db package", () => {
   it("exports the current schema object", () => {
-    expect(schema).toEqual({});
+    expect(schema).toEqual(
+      expect.objectContaining({
+        account: expect.any(Object),
+        session: expect.any(Object),
+        user: expect.any(Object),
+        verification: expect.any(Object),
+      }),
+    );
+    expect(schema.user.isAnonymous).toBeDefined();
   });
 
   it("requires an explicit database URL", () => {
