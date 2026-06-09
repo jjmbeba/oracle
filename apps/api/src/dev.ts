@@ -72,8 +72,13 @@ export function startApiDevServer(options: StartApiDevServerOptions = {}): ApiRu
     }
 
     shuttingDown = true;
-    await closeServer(server);
-    await connection.close();
+
+    try {
+      await closeServer(server);
+    } finally {
+      await connection.close();
+    }
+
   };
 
   const handleSignal = (): void => {
