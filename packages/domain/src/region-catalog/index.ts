@@ -5,9 +5,11 @@ export {
   countryGroups,
   getCountryById,
   getRegionById,
+  isRegionId,
   regionById,
   regions,
 } from "./catalog";
+export { regionIdSchema } from "./schemas";
 export type {
   Continent,
   ContinentId,

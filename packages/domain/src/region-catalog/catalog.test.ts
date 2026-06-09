@@ -6,6 +6,8 @@ import {
   countryGroups,
   getCountryById,
   getRegionById,
+  isRegionId,
+  regionIdSchema,
   regionById,
   regions,
   type Continent,
@@ -87,6 +89,27 @@ describe("region catalog", () => {
     for (const region of regions) {
       expect(regionById.get(region.id)).toBe(region);
     }
+  });
+
+  it("validates only catalog-backed region IDs", () => {
+    expect(regionIdSchema.parse("country:ke")).toBe("country:ke");
+    expect(regionIdSchema.parse("group:eastern-africa")).toBe(
+      "group:eastern-africa",
+    );
+    expect(regionIdSchema.parse("continent:africa")).toBe("continent:africa");
+
+    expect(regionIdSchema.safeParse("banana").success).toBe(false);
+    expect(regionIdSchema.safeParse("country:xx").success).toBe(false);
+    expect(regionIdSchema.safeParse("group:not-real").success).toBe(false);
+
+    const maybeRegionId = "country:ke";
+
+    if (!isRegionId(maybeRegionId)) {
+      throw new Error("Expected Kenya to be a known region ID");
+    }
+
+    expect(getRegionById(maybeRegionId)?.displayName).toBe("Kenya");
+    expect(isRegionId("banana")).toBe(false);
   });
 
   it("only references known country members", () => {

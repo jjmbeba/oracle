@@ -70,3 +70,6 @@ export const getRegionById = (id: RegionId): Region | undefined =>
 
 export const getCountryById = (id: CountryId): Country | undefined =>
   countryById.get(id);
+
+export const isRegionId = (value: string): value is RegionId =>
+  regionById.has(value as RegionId);

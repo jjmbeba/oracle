@@ -7,6 +7,9 @@
     ".": "./dist/index.js"
   },
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "type-check": "tsc --noEmit -p tsconfig.json",
