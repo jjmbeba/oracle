@@ -205,6 +205,7 @@ describe("normalized signal schema", () => {
     const parsed = normalizedSignalSchema.parse({
       ...baseSignal,
       providerEventId: "abc123",
+      possibleCrossProviderDuplicateKey: "opaque-cross-provider-key",
       issuedAt: "2026-06-09T10:00:00.000Z",
       occurredAt: "2026-06-09T09:58:00.000Z",
       scope: { kind: "global" },
@@ -215,6 +216,9 @@ describe("normalized signal schema", () => {
     });
 
     expect(parsed.providerEventId).toBe("abc123");
+    expect(parsed.possibleCrossProviderDuplicateKey).toBe(
+      "opaque-cross-provider-key",
+    );
     expect(parsed.sourceLink?.label).toBe("Example Source");
   });
 

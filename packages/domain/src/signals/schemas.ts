@@ -100,6 +100,7 @@ export const normalizedSignalSchema = z
     provider: nonEmptyStringSchema,
     dedupeKey: nonEmptyStringSchema,
     providerEventId: nonEmptyStringSchema.optional(),
+    possibleCrossProviderDuplicateKey: nonEmptyStringSchema.optional(),
     category: signalCategorySchema,
     title: nonEmptyStringSchema,
     severity: signalSeveritySchema,
