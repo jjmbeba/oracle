@@ -142,6 +142,10 @@ importers:
         version: 4.1.8(@types/node@24.13.1)(vite@8.0.16(@types/node@24.13.1)(esbuild@0.28.0)(tsx@4.22.4))
 
   packages/domain:
+    dependencies:
+      zod:
+        specifier: ^4.1.13
+        version: 4.1.13
     devDependencies:
       oxfmt:
         specifier: ^0.53.0
@@ -1703,6 +1707,9 @@ packages:
     resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
     engines: {node: '>=12'}
 
+  zod@4.1.13:
+    resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
+
 snapshots:
 
   '@babel/helper-string-parser@7.29.7': {}
@@ -2784,3 +2791,5 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 21.1.1
+
+  zod@4.1.13: {}
