@@ -105,10 +105,7 @@ export const createSignalDedupeMetadata = (input: SignalDedupeInput): SignalDedu
 
   if (input.strategy === "provider-native") {
     const providerEventId = requireRawValue("provider event ID", input.providerEventId);
-    const canonicalProviderEventId = requireCanonicalKeyPart(
-      "provider event ID",
-      input.providerEventId,
-    );
+    const canonicalProviderEventId = canonicalizeValue(providerEventId);
 
     return {
       dedupeKey: buildProviderDedupeKey(
