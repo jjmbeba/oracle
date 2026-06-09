@@ -1,1 +1,1 @@
-export const domainPackageName = "@oracle/domain";
+export * from "./region-catalog";
