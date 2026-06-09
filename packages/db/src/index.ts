@@ -21,7 +21,16 @@ export function createDatabaseConnection(databaseUrl: string): DatabaseConnectio
     throw new Error("Database URL is required.");
   }
 
-  const client = postgres(databaseUrl);
+  let client: Sql;
+
+  try {
+    client = postgres(databaseUrl);
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : "";
+
+    throw new Error(`Invalid database URL${detail}`, { cause: error });
+  }
+
   const db = drizzle(client, { schema });
 
   return {
