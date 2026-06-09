@@ -1,9 +1,4 @@
-import {
-  getRegionById,
-  isRegionId,
-  searchRegions,
-  toRegionSearchResult,
-} from "@oracle/domain";
+import { getRegionById, isRegionId, searchRegions, toRegionSearchResult } from "@oracle/domain";
 import { Hono } from "hono";
 
 export const regionsRoutes = new Hono();

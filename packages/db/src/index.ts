@@ -39,9 +39,7 @@ export function createDatabaseConnection(databaseUrl: string): DatabaseConnectio
   };
 }
 
-export async function checkDatabaseConnection(
-  connection: DatabaseQueryExecutor,
-): Promise<void> {
+export async function checkDatabaseConnection(connection: DatabaseQueryExecutor): Promise<void> {
   await connection.execute(databaseConnectionProbe);
 }
 

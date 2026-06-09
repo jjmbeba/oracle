@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { app } from "./app";
+import { app, createApp } from "./app";
 
 describe("api shell", () => {
   it("exposes API health", async () => {
@@ -16,6 +16,31 @@ describe("api shell", () => {
     const response = await app.request("/");
 
     expect(response.status).toBe(404);
+  });
+
+  it("mounts injected Better Auth routes without requiring a database", async () => {
+    const authApp = createApp({
+      auth: {
+        handler: async (request) => {
+          const url = new URL(request.url);
+
+          return Response.json({
+            method: request.method,
+            path: url.pathname,
+          });
+        },
+      },
+    });
+
+    const response = await authApp.request("/api/auth/sign-in/anonymous", {
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      method: "POST",
+      path: "/api/auth/sign-in/anonymous",
+    });
   });
 
   it("searches regions", async () => {
