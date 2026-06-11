@@ -1,12 +1,34 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { ApiHealth } from "./features/health/api";
 import { useApiHealthQuery } from "./features/health/queries";
+import MapView from "./features/map/components/map-view.vue";
+import type { RegionSearchResult } from "./features/regions/api";
+import RegionSearchPanel from "./features/regions/components/region-search-panel.vue";
+import SelectedRegionPanel from "./features/regions/components/selected-region-panel.vue";
+import { useRegionSearchQuery } from "./features/regions/queries";
 
 type HealthState = "checking" | "connected" | "unavailable";
 
+const searchInput = ref("");
+const selectedRegion = ref<RegionSearchResult | null>(null);
+
 const apiHealthQuery = useApiHealthQuery();
+const regionSearchQuery = useRegionSearchQuery(searchInput);
+
 const health = computed<ApiHealth | null>(() => apiHealthQuery.data.value ?? null);
+const searchResults = computed<readonly RegionSearchResult[]>(
+  () => regionSearchQuery.data.value ?? [],
+);
+const normalizedSearchInput = computed(() => searchInput.value.trim());
+const hasSearchText = computed(() => normalizedSearchInput.value.length > 0);
+const hasNoMatches = computed(
+  () =>
+    hasSearchText.value &&
+    regionSearchQuery.isSuccess.value &&
+    searchResults.value.length === 0,
+);
+
 const healthState = computed<HealthState>(() => {
   if (apiHealthQuery.isSuccess.value && health.value) {
     return "connected";
@@ -30,148 +52,114 @@ const healthLabel = computed(() => {
 
   return "Checking API";
 });
+
+function selectRegion(region: RegionSearchResult) {
+  selectedRegion.value = region;
+}
 </script>
 
 <template>
   <main class="app-shell">
-    <section class="dashboard-shell" aria-labelledby="dashboard-title">
-      <div class="title-group">
-        <p class="eyebrow">Oracle</p>
-        <h1 id="dashboard-title">Public signal monitoring workspace</h1>
-      </div>
+    <nav class="navbar">
+      <h1 class="navbar-brand">Oracle</h1>
+      <span class="navbar-health" :class="healthState">
+        <span class="health-dot" aria-hidden="true"></span>
+        {{ healthLabel }}
+      </span>
+    </nav>
 
-      <aside class="status-panel" aria-live="polite">
-        <div class="status-row">
-          <span class="status-dot" :class="healthState" aria-hidden="true"></span>
-          <span class="status-label">{{ healthLabel }}</span>
-        </div>
+    <div class="map-area">
+      <map-view />
 
-        <p class="status-copy">
-          <template v-if="healthState === 'connected' && health">
-            {{ health.service.toUpperCase() }} reports {{ health.status }}.
-          </template>
-          <template v-else-if="healthState === 'unavailable'">
-            Local dashboard path could not reach the API.
-          </template>
-          <template v-else>Confirming local web to API path.</template>
-        </p>
-      </aside>
-    </section>
+      <region-search-panel
+        v-model:search-input="searchInput"
+        :search-results="searchResults"
+        :selected-region="selectedRegion"
+        :normalized-search-input="normalizedSearchInput"
+        :is-error="regionSearchQuery.isError.value"
+        :is-fetching="regionSearchQuery.isFetching.value"
+        :is-loading="regionSearchQuery.isLoading.value"
+        :has-search-text="hasSearchText"
+        :has-no-matches="hasNoMatches"
+        @select-region="selectRegion"
+      />
+
+      <selected-region-panel v-if="selectedRegion" :selected-region="selectedRegion" />
+    </div>
   </main>
 </template>
 
 <style scoped>
 .app-shell {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #141414;
+}
+
+.navbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background:
-    linear-gradient(135deg, rgba(11, 21, 32, 0.82), rgba(6, 10, 16, 0.96)),
-    #090d14;
-  color: #eef4ff;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  justify-content: space-between;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 20px;
+  background: #141414;
+  border-bottom: 1px solid #2a2a2a;
+  z-index: 10;
 }
 
-.dashboard-shell {
-  width: min(100%, 48rem);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
-  gap: 1.25rem;
-  align-items: end;
-}
-
-.title-group {
-  display: grid;
-  gap: 0.625rem;
-}
-
-.eyebrow {
+.navbar-brand {
   margin: 0;
-  color: #78d8c8;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0;
+  font-size: 14px;
+  font-weight: 500;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c0c0c0;
+  user-select: none;
 }
 
-h1 {
-  margin: 0;
-  max-width: 12ch;
-  font-size: 2.5rem;
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.status-panel {
-  display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.26);
-  border-radius: 8px;
-  background: rgba(12, 19, 29, 0.84);
-  box-shadow: 0 1.25rem 3.5rem rgba(0, 0, 0, 0.22);
-}
-
-.status-row {
+.navbar-health {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: #666;
 }
 
-.status-dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: #d8a044;
-  box-shadow: 0 0 0 0.25rem rgba(216, 160, 68, 0.16);
+.health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #666;
 }
 
-.status-dot.connected {
-  background: #3fd2a8;
-  box-shadow: 0 0 0 0.25rem rgba(63, 210, 168, 0.16);
+.navbar-health.connected .health-dot {
+  background: #4a7c59;
 }
 
-.status-dot.unavailable {
-  background: #f06f6f;
-  box-shadow: 0 0 0 0.25rem rgba(240, 111, 111, 0.16);
+.navbar-health.connected {
+  color: #4a7c59;
 }
 
-.status-label {
-  font-size: 0.875rem;
-  font-weight: 700;
+.navbar-health.unavailable .health-dot {
+  background: #8b4a4a;
 }
 
-.status-copy {
-  margin: 0;
-  color: #b9c5d6;
-  font-size: 0.875rem;
-  line-height: 1.5;
+.navbar-health.unavailable {
+  color: #8b4a4a;
 }
 
-@media (max-width: 46rem) {
-  .app-shell {
-    align-items: stretch;
-    padding: 1.25rem;
-  }
+.map-area {
+  position: relative;
+  flex: 1;
+}
 
-  .dashboard-shell {
-    grid-template-columns: 1fr;
-    align-content: center;
-  }
-
-  h1 {
-    max-width: 14ch;
-    font-size: 2rem;
+@media (max-width: 640px) {
+  .navbar {
+    padding: 0 14px;
   }
 }
 </style>
