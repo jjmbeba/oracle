@@ -109,7 +109,9 @@ function selectFirstRegion() {
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/variables' as *;
+
 .search-panel {
   position: absolute;
   z-index: 5;
@@ -120,11 +122,16 @@ function selectFirstRegion() {
   gap: 12px;
   width: min(360px, calc(100% - 32px));
   padding: 14px;
-  border: 1px solid #2a2a2a;
-  background: rgba(20, 20, 20, 0.92);
-  color: #c0c0c0;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+  border: 1px solid $border-default;
+  background: $bg-panel;
+  color: $text-primary;
+  box-shadow: $shadow-panel;
   backdrop-filter: blur(12px);
+
+  @media (max-width: 640px) {
+    inset: 12px 12px auto;
+    width: auto;
+  }
 }
 
 .panel-heading {
@@ -139,71 +146,71 @@ function selectFirstRegion() {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #666;
+  color: $text-secondary;
 }
 
 h2 {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #d0d0d0;
+  color: $text-heading;
 }
 
 .search-form {
   display: flex;
   gap: 8px;
+
+  button {
+    width: 48px;
+    height: 34px;
+  }
 }
 
 input {
   min-width: 0;
   flex: 1;
   height: 34px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid $border-default;
   border-radius: 0;
   padding: 0 10px;
-  background: #1a1a1a;
-  color: #d0d0d0;
+  background: $bg-input;
+  color: $text-heading;
   font: inherit;
   font-size: 12px;
   outline: none;
-}
 
-input::placeholder {
-  color: #666;
+  &::placeholder {
+    color: $text-secondary;
+  }
 }
 
 button {
-  border: 1px solid #2a2a2a;
+  border: 1px solid $border-default;
   border-radius: 0;
-  background: #202020;
-  color: #c0c0c0;
+  background: $bg-button;
+  color: $text-primary;
   cursor: pointer;
   font: inherit;
   font-size: 11px;
 }
 
-.search-form button {
-  width: 48px;
-  height: 34px;
-}
-
 button:hover,
 button:focus-visible,
 input:focus-visible {
-  border-color: #555;
+  border-color: $border-hover;
 }
 
 .state-copy {
   margin: 0;
-  border: 1px solid #2a2a2a;
+  border: 1px solid $border-default;
   padding: 10px;
-  color: #888;
+  color: $text-muted;
   font-size: 12px;
   line-height: 1.45;
-}
 
-.state-copy.alert {
-  color: #b87878;
+  &.alert {
+    color: $text-alert;
+  }
 }
 
 .result-list {
@@ -217,32 +224,32 @@ input:focus-visible {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.15s;
-}
 
-.result-list:hover {
-  scrollbar-color: #555 transparent;
-}
+  &:hover {
+    scrollbar-color: $border-hover transparent;
+  }
 
-.result-list::-webkit-scrollbar {
-  width: 6px;
-}
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
 
-.result-list::-webkit-scrollbar-track {
-  background: transparent;
-}
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-.result-list::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-  transition: background 0.15s;
-}
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
 
-.result-list:hover::-webkit-scrollbar-thumb {
-  background: #555;
-}
+  &:hover::-webkit-scrollbar-thumb {
+    background: $border-hover;
 
-.result-list:hover::-webkit-scrollbar-thumb:hover {
-  background: #777;
+    &:hover {
+      background: #777;
+    }
+  }
 }
 
 .result-item {
@@ -254,11 +261,11 @@ input:focus-visible {
   min-height: 46px;
   padding: 8px 10px;
   text-align: left;
-}
 
-.result-item.selected {
-  border-color: #4a7c59;
-  color: #d0d0d0;
+  &.selected {
+    border-color: $accent-green;
+    color: $text-heading;
+  }
 }
 
 .result-main {
@@ -276,13 +283,13 @@ input:focus-visible {
 }
 
 .result-name {
-  color: #d0d0d0;
+  color: $text-heading;
   font-size: 12px;
 }
 
 .result-kind,
 .result-meta {
-  color: #777;
+  color: $text-meta;
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -290,12 +297,5 @@ input:focus-visible {
 
 .result-meta {
   flex: 0 0 auto;
-}
-
-@media (max-width: 640px) {
-  .search-panel {
-    inset: 12px 12px auto;
-    width: auto;
-  }
 }
 </style>

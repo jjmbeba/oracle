@@ -15,7 +15,9 @@ defineProps<{
   </nav>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/variables' as *;
+
 .navbar {
   display: flex;
   align-items: center;
@@ -23,9 +25,13 @@ defineProps<{
   height: 48px;
   min-height: 48px;
   padding: 0 20px;
-  background: #141414;
-  border-bottom: 1px solid #2a2a2a;
+  background: $bg-surface;
+  border-bottom: 1px solid $border-default;
   z-index: 10;
+
+  @media (max-width: 640px) {
+    padding: 0 14px;
+  }
 }
 
 .navbar-brand {
@@ -34,7 +40,7 @@ defineProps<{
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #c0c0c0;
+  color: $text-primary;
   user-select: none;
 }
 
@@ -44,35 +50,29 @@ defineProps<{
   gap: 6px;
   font-size: 11px;
   letter-spacing: 0.05em;
-  color: #666;
+  color: $text-secondary;
+
+  &.connected {
+    color: $accent-green;
+
+    .health-dot {
+      background: $accent-green;
+    }
+  }
+
+  &.unavailable {
+    color: $accent-red;
+
+    .health-dot {
+      background: $accent-red;
+    }
+  }
 }
 
 .health-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #666;
-}
-
-.navbar-health.connected .health-dot {
-  background: #4a7c59;
-}
-
-.navbar-health.connected {
-  color: #4a7c59;
-}
-
-.navbar-health.unavailable .health-dot {
-  background: #8b4a4a;
-}
-
-.navbar-health.unavailable {
-  color: #8b4a4a;
-}
-
-@media (max-width: 640px) {
-  .navbar {
-    padding: 0 14px;
-  }
+  background: $text-secondary;
 }
 </style>
