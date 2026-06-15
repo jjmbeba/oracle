@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { RegionSearchResult } from "./api";
 import {
-  getOverflowResultCount,
   getRegionKindLabel,
   getRegionMetaLabel,
-  getVisibleRegionResults,
   isRegionSelected,
 } from "./region-ui";
 
@@ -31,13 +29,6 @@ const africa: RegionSearchResult = {
   memberCount: 3,
 };
 
-const brazil: RegionSearchResult = {
-  id: "country:br",
-  kind: "country",
-  displayName: "Brazil",
-  alpha2: "BR",
-};
-
 describe("region UI helpers", () => {
   it("formats human-readable region kind labels", () => {
     expect(getRegionKindLabel(kenya)).toBe("Country");
@@ -58,17 +49,5 @@ describe("region UI helpers", () => {
     expect(isRegionSelected(kenya, kenya)).toBe(true);
     expect(isRegionSelected(kenya, africa)).toBe(false);
     expect(isRegionSelected(kenya, null)).toBe(false);
-  });
-
-  it("limits visible region results", () => {
-    expect(getVisibleRegionResults([kenya, easternAfrica, africa, brazil], 2)).toEqual([
-      kenya,
-      easternAfrica,
-    ]);
-  });
-
-  it("counts results hidden by the visible limit", () => {
-    expect(getOverflowResultCount([kenya, easternAfrica, africa, brazil], 2)).toBe(2);
-    expect(getOverflowResultCount([kenya, easternAfrica], 6)).toBe(0);
   });
 });

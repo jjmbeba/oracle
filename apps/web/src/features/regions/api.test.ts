@@ -2,54 +2,42 @@ import { describe, expect, it } from "vitest";
 import { REGION_SEARCH_PATH, fetchRegionSearch } from "./api";
 
 describe("region search client", () => {
-  it("calls the configured region search path for blank queries", async () => {
-    const calls: Array<RequestInfo | URL> = [];
-    const fetcher = async (input: RequestInfo | URL) => {
+  function mockFetcher(calls: Array<RequestInfo | URL>) {
+    return async (input: RequestInfo | URL) => {
       calls.push(input);
 
       return Response.json({ regions: [] });
     };
+  }
 
-    await fetchRegionSearch("", fetcher);
+  it("calls the configured region search path for blank queries", async () => {
+    const calls: Array<RequestInfo | URL> = [];
+
+    await fetchRegionSearch("", mockFetcher(calls));
 
     expect(calls).toEqual([REGION_SEARCH_PATH]);
   });
 
   it("calls the configured region search path for whitespace queries", async () => {
     const calls: Array<RequestInfo | URL> = [];
-    const fetcher = async (input: RequestInfo | URL) => {
-      calls.push(input);
 
-      return Response.json({ regions: [] });
-    };
-
-    await fetchRegionSearch("   ", fetcher);
+    await fetchRegionSearch("   ", mockFetcher(calls));
 
     expect(calls).toEqual([REGION_SEARCH_PATH]);
   });
 
   it("passes nonblank queries through the configured query parameter", async () => {
     const calls: Array<RequestInfo | URL> = [];
-    const fetcher = async (input: RequestInfo | URL) => {
-      calls.push(input);
 
-      return Response.json({ regions: [] });
-    };
-
-    await fetchRegionSearch("kenya", fetcher);
+    await fetchRegionSearch("kenya", mockFetcher(calls));
 
     expect(calls).toEqual([`${REGION_SEARCH_PATH}?q=kenya`]);
   });
 
   it("encodes search query characters", async () => {
     const calls: Array<RequestInfo | URL> = [];
-    const fetcher = async (input: RequestInfo | URL) => {
-      calls.push(input);
 
-      return Response.json({ regions: [] });
-    };
-
-    await fetchRegionSearch("cote d'ivoire", fetcher);
+    await fetchRegionSearch("cote d'ivoire", mockFetcher(calls));
 
     expect(calls).toEqual([`${REGION_SEARCH_PATH}?q=cote%20d'ivoire`]);
   });

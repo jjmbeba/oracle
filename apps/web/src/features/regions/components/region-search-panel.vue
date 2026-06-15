@@ -1,62 +1,59 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import type { RegionSearchResult } from "../api";
+import { useRegionSearchQuery } from "../queries";
 import {
-  getOverflowResultCount,
   getRegionKindLabel,
   getRegionMetaLabel,
-  getVisibleRegionResults,
   isRegionSelected,
 } from "../region-ui";
 
-const VISIBLE_REGION_RESULT_LIMIT = 6;
+const searchInput = ref("");
 
-const searchInput = defineModel<string>("searchInput", { required: true });
+const regionSearchQuery = useRegionSearchQuery(searchInput);
+
+const searchResults = computed<readonly RegionSearchResult[]>(
+  () => regionSearchQuery.data.value ?? [],
+);
+const normalizedSearchInput = computed(() => searchInput.value.trim());
+const hasSearchText = computed(() => normalizedSearchInput.value.length > 0);
+const hasNoMatches = computed(
+  () =>
+    hasSearchText.value &&
+    regionSearchQuery.isSuccess.value &&
+    searchResults.value.length === 0,
+);
 
 const props = defineProps<{
-  searchResults: readonly RegionSearchResult[];
   selectedRegion: RegionSearchResult | null;
-  normalizedSearchInput: string;
-  isError: boolean;
-  isFetching: boolean;
-  isLoading: boolean;
-  hasSearchText: boolean;
-  hasNoMatches: boolean;
 }>();
 
 const emit = defineEmits<{
   selectRegion: [region: RegionSearchResult];
 }>();
 
-const visibleResults = computed(() =>
-  getVisibleRegionResults(props.searchResults, VISIBLE_REGION_RESULT_LIMIT),
-);
-const overflowResultCount = computed(() =>
-  getOverflowResultCount(props.searchResults, VISIBLE_REGION_RESULT_LIMIT),
-);
-
 const searchStatusLabel = computed(() => {
-  if (props.isError) {
+  if (regionSearchQuery.isError.value) {
     return "Search unavailable";
   }
 
-  if (props.isFetching) {
+  if (regionSearchQuery.isFetching.value) {
     return "Refreshing";
   }
 
-  if (props.hasNoMatches) {
+  if (hasNoMatches.value) {
     return "No matches";
   }
 
-  if (props.hasSearchText) {
-    return `${props.searchResults.length} matches`;
+  if (hasSearchText.value) {
+    return `${searchResults.value.length} matches`;
   }
 
   return "Default regions";
 });
 
 function selectFirstRegion() {
-  const [firstRegion] = props.searchResults;
+  const [firstRegion] = searchResults.value;
 
   if (firstRegion) {
     emit("selectRegion", firstRegion);
@@ -85,15 +82,16 @@ function selectFirstRegion() {
       <button type="submit">Go</button>
     </form>
 
-    <p v-if="isError" class="state-copy alert">Region search is temporarily unavailable.</p>
-    <p v-else-if="hasNoMatches" class="state-copy">
-      No supported region matches "{{ normalizedSearchInput }}".
-    </p>
-    <p v-else-if="isLoading" class="state-copy">Loading supported regions.</p>
+    <div aria-live="polite">
+      <p v-if="regionSearchQuery.isError.value" class="state-copy alert">Region search is temporarily unavailable.</p>
+      <p v-else-if="hasNoMatches" class="state-copy">
+        No supported region matches "{{ normalizedSearchInput }}".
+      </p>
+      <p v-else-if="regionSearchQuery.isLoading.value" class="state-copy">Loading supported regions.</p>
 
-    <div v-else class="result-list">
+      <div v-else class="result-list">
       <button
-        v-for="region in visibleResults"
+        v-for="region in searchResults"
         :key="region.id"
         class="result-item"
         :class="{ selected: isRegionSelected(region, selectedRegion) }"
@@ -106,10 +104,7 @@ function selectFirstRegion() {
         </span>
         <span class="result-meta">{{ getRegionMetaLabel(region) }}</span>
       </button>
-
-      <p v-if="overflowResultCount > 0" class="result-overflow">
-        Showing {{ visibleResults.length }} of {{ searchResults.length }}. Keep typing to narrow.
-      </p>
+    </div>
     </div>
   </section>
 </template>
@@ -215,6 +210,39 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 300px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.15s;
+}
+
+.result-list:hover {
+  scrollbar-color: #555 transparent;
+}
+
+.result-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.result-list:hover::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.result-list:hover::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 
 .result-item {
@@ -253,8 +281,7 @@ input:focus-visible {
 }
 
 .result-kind,
-.result-meta,
-.result-overflow {
+.result-meta {
   color: #777;
   font-size: 10px;
   letter-spacing: 0.05em;
@@ -263,21 +290,6 @@ input:focus-visible {
 
 .result-meta {
   flex: 0 0 auto;
-}
-
-.result-overflow {
-  margin: 2px 0 0;
-  line-height: 1.4;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  clip-path: inset(50%);
 }
 
 @media (max-width: 640px) {

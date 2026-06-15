@@ -27,6 +27,10 @@ export function useMapLibre() {
       isLoaded.value = true;
     });
 
+    instance.on("error", () => {
+      isLoaded.value = false;
+    });
+
     map.value = instance;
   }
 

@@ -28,17 +28,3 @@ export function isRegionSelected(
 ): boolean {
   return selectedRegion?.id === region.id;
 }
-
-export function getVisibleRegionResults(
-  results: readonly RegionSearchResult[],
-  limit: number,
-): readonly RegionSearchResult[] {
-  return results.slice(0, limit);
-}
-
-export function getOverflowResultCount(
-  results: readonly RegionSearchResult[],
-  limit: number,
-): number {
-  return Math.max(results.length - limit, 0);
-}
