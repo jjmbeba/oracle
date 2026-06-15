@@ -3,8 +3,13 @@ import { createDatabaseConnection } from "@oracle/db";
 import { pathToFileURL } from "node:url";
 import { createApp } from "./app";
 import { createAuth } from "./auth";
+import { createAuthMiddleware } from "./auth-middleware";
 import { getAuthEnv, getRequiredEnv } from "./env";
 import { loadRootEnv } from "./load-root-env";
+import {
+  createDrizzleWatchedRegionStore,
+  createWatchedRegionsRoutes,
+} from "./watched-regions";
 
 import type { ServerType } from "@hono/node-server";
 
@@ -60,7 +65,16 @@ export function startApiDevServer(options: StartApiDevServerOptions = {}): ApiRu
   const port = parsePort(env.PORT);
   const connection = createDatabaseConnection(getRequiredEnv("DATABASE_URL", env));
   const auth = createAuth(connection, getAuthEnv(env));
+  const { requireAuth } = createAuthMiddleware(auth);
+  const watchedRegionsStore = createDrizzleWatchedRegionStore(connection.db);
+  const watchedRegionsRoutes = createWatchedRegionsRoutes({
+    store: watchedRegionsStore,
+    requireAuth,
+  });
   const app = createApp({ auth });
+
+  app.route("/watched-regions", watchedRegionsRoutes);
+
   const server = serve({ fetch: app.fetch, port });
   let shuttingDown = false;
 
