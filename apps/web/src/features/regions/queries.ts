@@ -11,7 +11,7 @@ export function useRegionSearchQuery(query: MaybeRefOrGetter<string>) {
 
   return useQuery({
     queryKey: computed(() => [...REGION_SEARCH_QUERY_KEY, normalizedQuery.value] as const),
-    queryFn: () => fetchRegionSearch(normalizedQuery.value),
+    queryFn: ({ queryKey }) => fetchRegionSearch(queryKey[queryKey.length - 1] as string),
     staleTime: REGION_SEARCH_STALE_TIME_MS,
     placeholderData: (previousData) => previousData,
   });

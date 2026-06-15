@@ -53,6 +53,8 @@ const searchStatusLabel = computed(() => {
 });
 
 function selectFirstRegion() {
+  if (regionSearchQuery.isFetching.value) return;
+
   const [firstRegion] = searchResults.value;
 
   if (firstRegion) {
