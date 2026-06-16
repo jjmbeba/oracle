@@ -1,10 +1,21 @@
 import { Hono } from "hono";
+import type { MiddlewareHandler } from "hono";
 import type { Auth } from "./auth";
 import type { AppBindings } from "./auth-middleware";
 import { regionsRoutes } from "./regions";
+import {
+  createWatchedRegionsRoutes,
+  type WatchedRegionStore,
+} from "./watched-regions";
+
+export type WatchedRegionsOptions = {
+  store: WatchedRegionStore;
+  requireAuth: MiddlewareHandler<AppBindings>;
+};
 
 export type AppOptions = {
   auth?: Pick<Auth, "handler">;
+  watchedRegions?: WatchedRegionsOptions;
 };
 
 export function createApp(options: AppOptions = {}) {
@@ -23,6 +34,11 @@ export function createApp(options: AppOptions = {}) {
   }
 
   app.route("/regions", regionsRoutes);
+
+  if (options.watchedRegions) {
+    const watchedRegionsRoutes = createWatchedRegionsRoutes(options.watchedRegions);
+    app.route("/watched-regions", watchedRegionsRoutes);
+  }
 
   return app;
 }

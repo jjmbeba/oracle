@@ -4,6 +4,7 @@ import postgres, { type Sql } from "postgres";
 import { schema } from "./schema";
 
 export { schema };
+export { watchedRegion } from "./app-schema";
 
 export type DatabaseConnection = {
   db: PostgresJsDatabase<typeof schema>;

@@ -15,6 +15,13 @@
       "when": 1781026303343,
       "tag": "0001_narrow_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781545809691,
+      "tag": "0002_lush_nocturne",
+      "breakpoints": true
     }
   ]
 }

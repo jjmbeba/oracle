@@ -18,6 +18,7 @@
     "@oracle/domain": "workspace:*",
     "better-auth": "^1.6.15",
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.0",
     "hono": "^4.10.0"
   },
   "devDependencies": {
