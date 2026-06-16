@@ -71,9 +71,13 @@ export function startApiDevServer(options: StartApiDevServerOptions = {}): ApiRu
     store: watchedRegionsStore,
     requireAuth,
   });
-  const app = createApp({ auth });
-
-  app.route("/watched-regions", watchedRegionsRoutes);
+  const app = createApp({
+    auth,
+    watchedRegions: {
+      store: watchedRegionsStore,
+      requireAuth,
+    },
+  });
 
   const server = serve({ fetch: app.fetch, port });
   let shuttingDown = false;
