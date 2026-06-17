@@ -189,4 +189,53 @@ describe("api shell", () => {
       },
     });
   });
+
+  it("returns dossier facts for a country", async () => {
+    const response = await app.request("/regions/country:ke/dossier");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.dossier).toBeDefined();
+    expect(body.dossier.region).toEqual({
+      kind: "country",
+      id: "country:ke",
+      displayName: "Kenya",
+      alpha2: "KE",
+    });
+    expect(body.dossier.overviewFacts).not.toBeNull();
+    expect(body.dossier.overviewFacts.capital).toBe("Nairobi");
+    expect(body.dossier.factSources.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("returns aggregated dossier facts for a country group", async () => {
+    const response = await app.request("/regions/group:eastern-africa/dossier");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.dossier.region.kind).toBe("country-group");
+    expect(body.dossier.region.displayName).toBe("Eastern Africa");
+    expect(body.dossier.overviewFacts.population).toBeGreaterThan(100_000_000);
+  });
+
+  it("returns aggregated dossier facts for a continent", async () => {
+    const response = await app.request("/regions/continent:africa/dossier");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.dossier.region.kind).toBe("continent");
+    expect(body.dossier.region.displayName).toBe("Africa");
+    expect(body.dossier.overviewFacts.population).toBeGreaterThan(1_000_000_000);
+  });
+
+  it("returns 404 for unknown region dossier", async () => {
+    const response = await app.request("/regions/banana/dossier");
+
+    expect(response.status).toBe(404);
+  });
 });

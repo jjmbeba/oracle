@@ -9,6 +9,10 @@ export {
   regionById,
   regions,
 } from "./catalog";
+export {
+  getRegionDossier,
+  aggregateMemberFacts,
+} from "./dossier";
 export { regionIdSchema } from "./schemas";
 export {
   searchRegions,
@@ -17,12 +21,19 @@ export {
 } from "./search";
 export type {
   Continent,
+  ContinentDossier,
   ContinentId,
   Country,
+  CountryDossier,
   CountryGroup,
   CountryGroupId,
   CountryId,
+  CountryOverviewFacts,
+  FactSource,
+  GroupDossier,
+  GroupOverviewFacts,
   Region,
+  RegionDossier,
   RegionId,
   RegionKind,
 } from "./types";
