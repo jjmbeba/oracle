@@ -46,7 +46,7 @@ describe("getRegionDossier", () => {
       expect(dossier.overviewFacts?.flagEmoji).toBe("🇧🇻");
     });
 
-    it("returns null overviewFacts for Antarctica (no human-population data)", () => {
+    it("returns overviewFacts with sparse data for Antarctica", () => {
       const dossier = getRegionDossier("country:aq");
       expect(dossier).not.toBeNull();
       if (!dossier || dossier.region.kind !== "country") return;

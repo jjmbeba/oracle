@@ -146,7 +146,11 @@ type DossierApiResponse = {
 };
 
 function isFactSource(value: unknown): value is FactSource {
-  return isRecord(value) && typeof value.label === "string";
+  return (
+    isRecord(value) &&
+    typeof value.label === "string" &&
+    (value.url === undefined || typeof value.url === "string")
+  );
 }
 
 function isCountryDossierFacts(value: unknown): value is CountryDossierFacts {
@@ -198,6 +202,8 @@ function isDossierResponse(value: unknown): value is DossierResponse {
       typeof region.id === "string" &&
       typeof region.displayName === "string" &&
       typeof region.memberCount === "number" &&
+      Number.isInteger(region.memberCount) &&
+      region.memberCount >= 0 &&
       (value.overviewFacts === null || isGroupDossierFacts(value.overviewFacts))
     );
   }
