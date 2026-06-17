@@ -1,8 +1,9 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { NormalizedSignal } from "@oracle/domain";
 import { createDatabaseConnection } from "./index";
+import { signal } from "./signal-schema";
 import { upsertSignal, querySignals } from "./signal-repo";
 import type { schema } from "./schema";
 
@@ -76,6 +77,30 @@ describe("signal repo", () => {
 
       expect(result.title).toBe("Updated Title");
       expect(result.severity).toBe("severe");
+    });
+
+    itIfDb("refreshes updatedAt on conflict", async () => {
+      const dedupeKey = `signal:earthquake:test-provider:provider-native:updatetime-test-${crypto.randomUUID()}`;
+      await upsertSignal(db, makeSignal({ dedupeKey, title: "First" }));
+
+      const [before] = await db
+        .select({ updatedAt: signal.updatedAt })
+        .from(signal)
+        .where(eq(signal.dedupeKey, dedupeKey));
+
+      // Ensure enough time passes for a distinct timestamp
+      await new Promise((r) => setTimeout(r, 5));
+
+      await upsertSignal(db, makeSignal({ dedupeKey, title: "Second" }));
+
+      const [after] = await db
+        .select({ updatedAt: signal.updatedAt })
+        .from(signal)
+        .where(eq(signal.dedupeKey, dedupeKey));
+
+      expect(after.updatedAt.getTime()).toBeGreaterThan(
+        before.updatedAt.getTime(),
+      );
     });
 
     itIfDb("creates separate rows for different dedupe keys", async () => {

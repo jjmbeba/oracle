@@ -1,6 +1,9 @@
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, gte, inArray, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { normalizedSignalSchema } from "@oracle/domain";
+import {
+  normalizedSignalSchema,
+  signalGeometrySchema,
+} from "@oracle/domain";
 import type {
   NormalizedSignal,
   SignalCategory,
@@ -22,6 +25,16 @@ type ScopeColumns = {
   latitude: number | null;
   geometry: unknown | null;
 };
+
+function buildConflictSet() {
+  const cols = getTableColumns(signal);
+  const skip = new Set(["id", "createdAt", "updatedAt"]);
+  return Object.fromEntries(
+    Object.entries(cols)
+      .filter(([key]) => !skip.has(key))
+      .map(([key, col]) => [key, sql`excluded.${sql.identifier(col.name)}`]),
+  ) as Record<string, ReturnType<typeof sql>>;
+}
 
 const decomposeScope = (scope: SignalScope): ScopeColumns => {
   switch (scope.kind) {
@@ -77,7 +90,10 @@ const reconstructScope = (row: SignalRow): SignalScope => {
       }
       return { kind: "point", coordinates: [row.longitude, row.latitude] };
     case "geometry":
-      return { kind: "geometry", geometry: row.geometry as Extract<SignalScope, { kind: "geometry" }>["geometry"] };
+      if (row.geometry === null) {
+        throw new Error("Scope is geometry but geometry is null");
+      }
+      return { kind: "geometry", geometry: signalGeometrySchema.parse(row.geometry) };
     default:
       throw new Error(`Unknown scope kind: ${row.scopeKind}`);
   }
@@ -143,24 +159,8 @@ export async function upsertSignal(
     .onConflictDoUpdate({
       target: signal.dedupeKey,
       set: {
-        provider: sql`excluded.provider`,
-        category: sql`excluded.category`,
-        title: sql`excluded.title`,
-        severity: sql`excluded.severity`,
-        confidence: sql`excluded.confidence`,
-        effectiveAt: sql`excluded.effective_at`,
-        occurredAt: sql`excluded.occurred_at`,
-        issuedAt: sql`excluded.issued_at`,
-        scopeKind: sql`excluded.scope_kind`,
-        regionId: sql`excluded.region_id`,
-        longitude: sql`excluded.longitude`,
-        latitude: sql`excluded.latitude`,
-        geometry: sql`excluded.geometry`,
-        sourceLinkUrl: sql`excluded.source_link_url`,
-        sourceLinkLabel: sql`excluded.source_link_label`,
-        providerEventId: sql`excluded.provider_event_id`,
-        possibleCrossProviderDuplicateKey:
-          sql`excluded.possible_cross_provider_duplicate_key`,
+        ...buildConflictSet(),
+        updatedAt: sql`now()`,
       },
     })
     .returning();
