@@ -31,8 +31,10 @@ function createTestLogger() {
   };
 }
 
+const testDbEnv = { DATABASE_URL: "postgresql://localhost:5432/test" };
+
 describe("worker runtime", () => {
-  it("registers the placeholder job and logs startup", () => {
+  it("registers the usgs ingestion job and logs startup", () => {
     const { logger, records } = createTestLogger();
     const scheduler: Scheduler = {
       registerIntervalJob: vi.fn(),
@@ -40,22 +42,22 @@ describe("worker runtime", () => {
     };
 
     startWorker({
-      env: { WORKER_PLACEHOLDER_INTERVAL_MS: "2500" },
+      env: { ...testDbEnv, USGS_POLL_INTERVAL_MS: "300000" },
       logger,
       scheduler,
       signals: new SignalEmitter(),
     });
 
     expect(scheduler.registerIntervalJob).toHaveBeenCalledWith({
-      name: "placeholder",
-      intervalMs: 2500,
+      name: "usgs-ingestion",
+      intervalMs: 300000,
       run: expect.any(Function),
     });
     expect(records).toEqual([
       {
         event: "worker.started",
         metadata: {
-          placeholderIntervalMs: 2500,
+          usgsPollIntervalMs: 300000,
         },
       },
     ]);
@@ -76,6 +78,7 @@ describe("worker runtime", () => {
     const signals = new SignalEmitter();
 
     const runtime = startWorker({
+      env: testDbEnv,
       logger,
       scheduler,
       signals,
@@ -107,6 +110,7 @@ describe("worker runtime", () => {
       stop: vi.fn(() => Promise.reject(error)),
     };
     const runtime = startWorker({
+      env: testDbEnv,
       logger,
       scheduler,
       signals: new SignalEmitter(),

@@ -4,7 +4,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { NormalizedSignal } from "@oracle/domain";
 import { createDatabaseConnection } from "./index";
 import { signal } from "./signal-schema";
-import { upsertSignal, querySignals } from "./signal-repo";
+import { upsertSignal, querySignals, upsertProviderFreshness, queryProviderFreshness } from "./signal-repo";
 import type { schema } from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -292,6 +292,70 @@ describe("signal repo", () => {
       const newerIndex = results.findIndex((s) => s.title === "Newer Signal");
 
       expect(olderIndex).toBeLessThan(newerIndex);
+    });
+  });
+
+  describe("provider freshness", () => {
+    itIfDb("inserts and reads freshness for a provider and category", async () => {
+      const freshness = await upsertProviderFreshness(db, {
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-01T12:00:00Z"),
+      });
+
+      const read = await queryProviderFreshness(db, "usgs", "earthquake");
+
+      expect(read).not.toBeNull();
+      expect(read!.provider).toBe("usgs");
+      expect(read!.category).toBe("earthquake");
+      expect(read!.lastSuccessfulPollAt.toISOString()).toBe(
+        "2026-06-01T12:00:00.000Z",
+      );
+    });
+
+    itIfDb("updates existing freshness on conflict", async () => {
+      await upsertProviderFreshness(db, {
+        provider: "openweather",
+        category: "weather",
+        lastSuccessfulPollAt: new Date("2026-01-01T00:00:00Z"),
+      });
+
+      await upsertProviderFreshness(db, {
+        provider: "openweather",
+        category: "weather",
+        lastSuccessfulPollAt: new Date("2026-06-15T00:00:00Z"),
+      });
+
+      const read = await queryProviderFreshness(db, "openweather", "weather");
+      expect(read!.lastSuccessfulPollAt.toISOString()).toBe(
+        "2026-06-15T00:00:00.000Z",
+      );
+    });
+
+    itIfDb("returns null for unknown provider or category", async () => {
+      const read = await queryProviderFreshness(db, "nonexistent", "earthquake");
+      expect(read).toBeNull();
+    });
+
+    itIfDb("separates freshness by composite key", async () => {
+      await upsertProviderFreshness(db, {
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-01T00:00:00Z"),
+      });
+
+      await upsertProviderFreshness(db, {
+        provider: "noaa-swpc",
+        category: "space-weather",
+        lastSuccessfulPollAt: new Date("2026-06-02T00:00:00Z"),
+      });
+
+      const usgs = await queryProviderFreshness(db, "usgs", "earthquake");
+      const swpc = await queryProviderFreshness(db, "noaa-swpc", "space-weather");
+
+      expect(usgs!.lastSuccessfulPollAt.getTime()).toBeLessThan(
+        swpc!.lastSuccessfulPollAt.getTime(),
+      );
     });
   });
 });

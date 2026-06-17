@@ -1,6 +1,8 @@
-import { readPlaceholderIntervalMs } from "./config";
+import { createDatabaseConnection } from "@oracle/db";
+import { readDatabaseUrl, readUsgsPollIntervalMs } from "./config";
 import { createWorkerLogger, type WorkerLogger } from "./logger";
 import { createScheduler, type Scheduler } from "./scheduler";
+import { createUsgsIngestionJob } from "./jobs/usgs-ingestion";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -29,20 +31,29 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
       logger,
     });
   const signals = options.signals ?? process;
-  const placeholderIntervalMs = readPlaceholderIntervalMs(options.env);
+  const env = options.env ?? process.env;
+  const usgsPollIntervalMs = readUsgsPollIntervalMs(env);
   let shuttingDown = false;
+  let dbConnection: ReturnType<typeof createDatabaseConnection> | undefined;
 
-  scheduler.registerIntervalJob({
-    name: "placeholder",
-    intervalMs: placeholderIntervalMs,
-    run() {
-      return Promise.resolve();
-    },
+  const databaseUrl = readDatabaseUrl(env);
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required. Set it in the environment or .env file.");
+  }
+
+  dbConnection = createDatabaseConnection(databaseUrl);
+
+  const usgsJob = createUsgsIngestionJob({
+    db: dbConnection.db,
+    logger,
+    env,
   });
+
+  scheduler.registerIntervalJob(usgsJob);
 
   logger.info("worker.started", {
     metadata: {
-      placeholderIntervalMs,
+      usgsPollIntervalMs,
     },
   });
 
@@ -53,7 +64,14 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
 
     shuttingDown = true;
     logger.info("worker.shutdown.started");
-    await scheduler.stop();
+    try {
+      await scheduler.stop();
+    } finally {
+      if (dbConnection) {
+        await dbConnection.close();
+      }
+    }
+
     logger.info("worker.shutdown.completed");
   };
 

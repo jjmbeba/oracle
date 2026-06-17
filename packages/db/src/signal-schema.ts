@@ -1,4 +1,4 @@
-import { doublePrecision, index, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { doublePrecision, index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const signal = pgTable(
   "signal",
@@ -43,5 +43,28 @@ export const signal = pgTable(
     index("signal_category_idx").on(table.category),
     index("signal_effective_at_idx").on(table.effectiveAt),
     index("signal_scope_region_idx").on(table.scopeKind, table.regionId),
+  ],
+);
+
+export const providerFreshness = pgTable(
+  "provider_freshness",
+  {
+    provider: text("provider").notNull(),
+    category: text("category", {
+      enum: ["earthquake", "weather", "space-weather"],
+    }).notNull(),
+    lastSuccessfulPollAt: timestamp("last_successful_poll_at", {
+      withTimezone: true,
+    }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.provider, table.category] }),
   ],
 );

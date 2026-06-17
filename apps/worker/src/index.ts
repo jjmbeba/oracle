@@ -1,7 +1,15 @@
 import { pathToFileURL } from "node:url";
 import { startWorker } from "./worker";
 
-export { defaultPlaceholderIntervalMs, maxIntervalMs, parsePlaceholderIntervalMs } from "./config";
+export {
+  defaultPlaceholderIntervalMs,
+  defaultUsgsPollIntervalMs,
+  maxIntervalMs,
+  parsePlaceholderIntervalMs,
+  parseUsgsPollIntervalMs,
+  readDatabaseUrl,
+  readUsgsPollIntervalMs,
+} from "./config";
 export { createWorkerLogger, serializeError } from "./logger";
 export { createScheduler } from "./scheduler";
 export { startWorker } from "./worker";
