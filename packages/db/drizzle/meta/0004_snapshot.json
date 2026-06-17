@@ -497,8 +497,10 @@
         "category": {
           "name": "category",
           "type": "text",
+          "typeAnnotation": "enum",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "enumValues": ["earthquake", "weather", "space-weather"]
         },
         "last_successful_poll_at": {
           "name": "last_successful_poll_at",

@@ -64,10 +64,12 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
 
     shuttingDown = true;
     logger.info("worker.shutdown.started");
-    await scheduler.stop();
-
-    if (dbConnection) {
-      await dbConnection.close();
+    try {
+      await scheduler.stop();
+    } finally {
+      if (dbConnection) {
+        await dbConnection.close();
+      }
     }
 
     logger.info("worker.shutdown.completed");

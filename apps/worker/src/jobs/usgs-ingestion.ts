@@ -38,7 +38,17 @@ export function createUsgsIngestionJob(options: UsgsIngestionJobOptions): Schedu
         return;
       }
 
-      const { signals, skipped } = normalizeUsgsResponse(fetchResult.data);
+      let normalized: ReturnType<typeof normalizeUsgsResponse>;
+      try {
+        normalized = normalizeUsgsResponse(fetchResult.data);
+      } catch (error: unknown) {
+        logger.error("usgs.normalize.failed", {
+          jobName: "usgs-ingestion",
+          error,
+        });
+        return;
+      }
+      const { signals, skipped } = normalized;
 
       logger.info("usgs.normalized", {
         metadata: { signalCount: signals.length, skippedCount: skipped.length },

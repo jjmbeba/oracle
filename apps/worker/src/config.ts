@@ -25,7 +25,7 @@ export function readPlaceholderIntervalMs(env: NodeJS.ProcessEnv = process.env):
 }
 
 export function readDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string {
-  return env.DATABASE_URL ?? defaultDatabaseUrl;
+  return (env.DATABASE_URL ?? defaultDatabaseUrl).trim();
 }
 
 export function parseUsgsPollIntervalMs(

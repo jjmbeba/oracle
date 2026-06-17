@@ -42,6 +42,22 @@ describe("fetchUsgsSignals", () => {
 
     await fetchUsgsSignals(mockFetch, customUrl);
 
-    expect(mockFetch).toHaveBeenCalledWith(customUrl);
+    expect(mockFetch).toHaveBeenCalledWith(customUrl, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  });
+
+  it("aborts on timeout", async () => {
+    const mockFetch = vi.fn(
+      (_url: string, opts: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        const signal = opts.signal as AbortSignal;
+        if (signal.aborted) {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+        }
+        signal.addEventListener("abort", () => {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+        });
+      }),
+    );
+
+    await expect(fetchUsgsSignals(mockFetch, undefined, 10)).rejects.toThrow();
   });
 });

@@ -47,6 +47,10 @@ describe("database URL", () => {
   it("returns empty string when DATABASE_URL is not set", () => {
     expect(readDatabaseUrl({})).toBe("");
   });
+
+  it("returns empty string when DATABASE_URL is whitespace", () => {
+    expect(readDatabaseUrl({ DATABASE_URL: "   " })).toBe("");
+  });
 });
 
 describe("USGS poll interval", () => {

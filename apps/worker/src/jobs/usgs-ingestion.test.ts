@@ -151,6 +151,26 @@ describe("usgs ingestion job", () => {
     expect(records.some((r) => r.event === "usgs.fetch.failed")).toBe(true);
   });
 
+  it("logs normalization failure without crashing", async () => {
+    vi.mocked(fetchUsgsSignals).mockResolvedValue({
+      data: { type: "InvalidResponse" },
+      response: { ok: true } as Response,
+    });
+
+    vi.mocked(normalizeUsgsResponse).mockImplementation(() => {
+      throw new Error("Schema validation failed");
+    });
+
+    const { records, logger } = createTestLogger();
+    const job = createUsgsIngestionJob({ db: mockDb, logger });
+
+    await job.run();
+
+    expect(normalizeUsgsResponse).toHaveBeenCalledTimes(1);
+    expect(upsertSignal).not.toHaveBeenCalled();
+    expect(records.some((r) => r.event === "usgs.normalize.failed")).toBe(true);
+  });
+
   it("logs upsert failures without crashing the job", async () => {
     vi.mocked(fetchUsgsSignals).mockResolvedValue({
       data: validUsgsResponse,
