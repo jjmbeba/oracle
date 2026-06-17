@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { RegionSearchResult } from "../api";
+import type { WatchedRegion } from "../../watched-regions/api";
 import { useRegionSearchQuery } from "../queries";
 import {
   getRegionKindLabel,
@@ -9,6 +10,7 @@ import {
 } from "../region-ui";
 
 const searchInput = ref("");
+const watchedOpen = ref(true);
 
 const regionSearchQuery = useRegionSearchQuery(searchInput);
 
@@ -26,10 +28,12 @@ const hasNoMatches = computed(
 
 const props = defineProps<{
   selectedRegion: RegionSearchResult | null;
+  watchedRegions: readonly WatchedRegion[];
 }>();
 
 const emit = defineEmits<{
   selectRegion: [region: RegionSearchResult];
+  unwatchRegion: [regionId: string];
 }>();
 
 const searchStatusLabel = computed(() => {
@@ -61,10 +65,63 @@ function selectFirstRegion() {
     emit("selectRegion", firstRegion);
   }
 }
+
+function getWatchedMeta(region: WatchedRegion): string {
+  if (!region.region) return "";
+  return getRegionMetaLabel(region.region);
+}
+
+function getWatchedKind(region: WatchedRegion): string {
+  if (!region.region) return "";
+  return getRegionKindLabel(region.region);
+}
 </script>
 
 <template>
   <section class="search-panel" aria-labelledby="region-search-heading">
+    <div v-if="watchedRegions.length > 0" class="watched-section">
+      <button
+        class="watched-header"
+        type="button"
+        @click="watchedOpen = !watchedOpen"
+      >
+        <span class="watched-label">
+          <span class="watched-count">Watched</span>
+          <span class="watched-fraction">{{ watchedRegions.length }} / 10</span>
+        </span>
+        <span class="watched-toggle">{{ watchedOpen ? "−" : "+" }}</span>
+      </button>
+
+      <div v-if="watchedOpen" class="watched-list">
+        <div
+          v-for="wr in watchedRegions"
+          :key="wr.id"
+          class="watched-item"
+        >
+          <button
+            class="watched-item-select"
+            type="button"
+            :disabled="!wr.region"
+            @click="wr.region && emit('selectRegion', wr.region)"
+          >
+            <span class="watched-item-main">
+              <span class="watched-item-name">{{ wr.region?.displayName ?? wr.regionId }}</span>
+              <span class="watched-item-kind">{{ getWatchedKind(wr) }}</span>
+            </span>
+            <span class="watched-item-meta">{{ getWatchedMeta(wr) }}</span>
+          </button>
+          <button
+            class="unwatch-btn"
+            type="button"
+            @click="emit('unwatchRegion', wr.regionId)"
+            title="Unwatch region"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-heading">
       <div>
         <p class="panel-label">Region search</p>
@@ -299,5 +356,135 @@ input:focus-visible {
 
 .result-meta {
   flex: 0 0 auto;
+}
+
+.watched-section {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $border-default;
+}
+
+.watched-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: $text-primary;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  &:hover {
+    color: $text-heading;
+  }
+}
+
+.watched-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.watched-count {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $text-secondary;
+}
+
+.watched-fraction {
+  font-size: 11px;
+  color: $text-meta;
+}
+
+.watched-toggle {
+  font-size: 14px;
+  color: $text-meta;
+  line-height: 1;
+}
+
+.watched-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.watched-item {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+
+  &:hover {
+    border-color: $border-hover;
+  }
+}
+
+.watched-item-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: $text-primary;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.watched-item-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.watched-item-name {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: $text-heading;
+}
+
+.watched-item-kind,
+.watched-item-meta {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: $text-meta;
+}
+
+.unwatch-btn {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid $border-default;
+  padding: 0;
+  background: $bg-button;
+  color: $text-muted;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+
+  &:hover {
+    border-color: $accent-red;
+    color: $accent-red;
+  }
 }
 </style>
