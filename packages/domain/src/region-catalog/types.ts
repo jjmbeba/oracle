@@ -27,3 +27,65 @@ export type Continent = {
 };
 
 export type Region = Country | CountryGroup | Continent;
+
+export type FactSource = {
+  readonly label: string;
+  readonly url?: string;
+};
+
+export type CountryOverviewFacts = {
+  readonly capital: string | null;
+  readonly population: number | null;
+  readonly languages: readonly string[] | null;
+  readonly currencies: readonly string[] | null;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
+  readonly flagEmoji: string | null;
+  readonly gdpPerCapita: number | null;
+  readonly populationDensity: number | null;
+};
+
+export type GroupOverviewFacts = {
+  readonly population: number | null;
+  readonly languages: readonly string[];
+  readonly currencies: readonly string[];
+  readonly gdpPerCapita: number | null;
+  readonly populationDensity: number | null;
+};
+export type ContinentOverviewFacts = GroupOverviewFacts;
+
+export type BaseDossier = {
+  readonly factSources: readonly FactSource[];
+};
+
+export type CountryDossier = BaseDossier & {
+  readonly region: {
+    readonly kind: "country";
+    readonly id: CountryId;
+    readonly displayName: string;
+    readonly alpha2: string;
+  };
+  readonly overviewFacts: CountryOverviewFacts | null;
+};
+
+export type GroupDossier = BaseDossier & {
+  readonly region: {
+    readonly kind: "country-group";
+    readonly id: CountryGroupId;
+    readonly displayName: string;
+    readonly memberCount: number;
+  };
+  readonly overviewFacts: GroupOverviewFacts | null;
+};
+
+export type ContinentDossier = BaseDossier & {
+  readonly region: {
+    readonly kind: "continent";
+    readonly id: ContinentId;
+    readonly displayName: string;
+    readonly memberCount: number;
+  };
+  readonly overviewFacts: ContinentOverviewFacts | null;
+};
+
+export type RegionDossier = CountryDossier | GroupDossier | ContinentDossier;

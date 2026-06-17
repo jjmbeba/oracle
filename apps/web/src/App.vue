@@ -4,7 +4,7 @@ import { useApiHealthStatus } from "./features/health/composables/use-api-health
 import MapView from "./features/map/components/map-view.vue";
 import type { RegionSearchResult } from "./features/regions/api";
 import RegionSearchPanel from "./features/regions/components/region-search-panel.vue";
-import SelectedRegionPanel from "./features/regions/components/selected-region-panel.vue";
+import RegionDossierPanel from "./features/regions/components/region-dossier-panel.vue";
 import AppNavbar from "./layout/components/app-navbar.vue";
 import { useAnonymousSession } from "./composables/use-anonymous-session";
 import {
@@ -29,6 +29,10 @@ onMounted(() => {
 
 function selectRegion(region: RegionSearchResult) {
   selectedRegion.value = region;
+}
+
+function clearSelectedRegion() {
+  selectedRegion.value = null;
 }
 
 const selectedIsWatched = computed(() => {
@@ -72,11 +76,12 @@ function handleUnwatchRegion(regionId: string) {
         @unwatch-region="handleUnwatchRegion"
       />
 
-      <selected-region-panel
+      <region-dossier-panel
         v-if="selectedRegion"
         :selected-region="selectedRegion"
         :is-watched="selectedIsWatched"
         :watch-disabled-reason="watchDisabledReason"
+        @close="clearSelectedRegion"
         @watch="handleWatch"
         @unwatch="handleUnwatch"
       />

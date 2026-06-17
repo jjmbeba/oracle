@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { REGION_SEARCH_PATH, fetchRegionSearch } from "./api";
+import type { CountryDossierFacts } from "./api";
+import { REGION_SEARCH_PATH, fetchRegionDossier, fetchRegionSearch } from "./api";
 
 describe("region search client", () => {
   function mockFetcher(calls: Array<RequestInfo | URL>) {
@@ -128,5 +129,59 @@ describe("region search client", () => {
         });
       }),
     ).rejects.toThrow("Region search returned an invalid response");
+  });
+});
+
+describe("region dossier client", () => {
+  const mockCountryDossier = {
+    dossier: {
+      region: {
+        kind: "country",
+        id: "country:ke",
+        displayName: "Kenya",
+        alpha2: "KE",
+      },
+      overviewFacts: {
+        capital: "Nairobi",
+        population: 54_000_000,
+        languages: ["Swahili", "English"],
+        currencies: ["KES"],
+        latitude: -1.29,
+        longitude: 36.82,
+        flagEmoji: "🇰🇪",
+        gdpPerCapita: 2200,
+        populationDensity: 94,
+      },
+      factSources: [{ label: "UN Statistics 2024" }],
+    },
+  };
+
+  it("parses a country dossier response", async () => {
+    const dossier = await fetchRegionDossier("country:ke", async () => {
+      return Response.json(mockCountryDossier);
+    });
+
+    expect(dossier.region.kind).toBe("country");
+    if (dossier.region.kind !== "country") return;
+    expect(dossier.region.alpha2).toBe("KE");
+    const facts = dossier.overviewFacts as CountryDossierFacts | null;
+    expect(facts?.capital).toBe("Nairobi");
+    expect(facts?.languages).toContain("Swahili");
+  });
+
+  it("rejects a failed dossier response", async () => {
+    await expect(
+      fetchRegionDossier("country:xx", async () => {
+        return new Response(null, { status: 404 });
+      }),
+    ).rejects.toThrow("Region dossier request failed with status 404");
+  });
+
+  it("rejects a malformed dossier response", async () => {
+    await expect(
+      fetchRegionDossier("country:ke", async () => {
+        return Response.json({ dossier: { region: { kind: "country" } } });
+      }),
+    ).rejects.toThrow("Region dossier returned an invalid response");
   });
 });
