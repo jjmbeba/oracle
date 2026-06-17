@@ -4,6 +4,13 @@ import { getRegionKindLabel, getRegionMetaLabel } from "../region-ui";
 
 defineProps<{
   selectedRegion: RegionSearchResult;
+  isWatched: boolean;
+  watchDisabledReason: string | null;
+}>();
+
+const emit = defineEmits<{
+  watch: [];
+  unwatch: [];
 }>();
 </script>
 
@@ -15,6 +22,25 @@ defineProps<{
       <span>{{ getRegionKindLabel(selectedRegion) }}</span>
       <span>{{ getRegionMetaLabel(selectedRegion) }}</span>
     </div>
+
+    <button
+      v-if="isWatched"
+      class="watch-btn watching"
+      type="button"
+      @click="emit('unwatch')"
+    >
+      Unwatch region
+    </button>
+    <button
+      v-else
+      class="watch-btn"
+      type="button"
+      :disabled="!!watchDisabledReason"
+      :title="watchDisabledReason ?? ''"
+      @click="emit('watch')"
+    >
+      {{ watchDisabledReason ?? "Watch region" }}
+    </button>
   </section>
 </template>
 
@@ -56,6 +82,35 @@ h2 {
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.watch-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 0;
+  border: 1px solid $border-default;
+  background: $bg-button;
+  color: $text-primary;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &:hover:not(:disabled) {
+    border-color: $border-hover;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    color: $text-muted;
+  }
+
+  &.watching {
+    border-color: $accent-green;
+    color: $accent-green;
+  }
 }
 
 @media (max-width: 640px) {
