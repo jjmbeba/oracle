@@ -15,9 +15,11 @@
     "format": "oxfmt -c ../../.oxfmt.json src drizzle.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:check": "tsx src/check.ts"
+    "db:check": "tsx src/check.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@oracle/domain": "workspace:*",
     "drizzle-orm": "^0.45.0",
     "postgres": "^3.4.7"
   },

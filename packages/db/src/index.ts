@@ -5,6 +5,9 @@ import { schema } from "./schema";
 
 export { schema };
 export { watchedRegion } from "./app-schema";
+export { signal } from "./signal-schema";
+export { upsertSignal, querySignals } from "./signal-repo";
+export type { SignalQueryFilters } from "./signal-repo";
 
 export type DatabaseConnection = {
   db: PostgresJsDatabase<typeof schema>;
