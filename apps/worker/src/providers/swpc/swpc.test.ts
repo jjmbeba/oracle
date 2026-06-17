@@ -119,6 +119,46 @@ describe("normalizeSwpcResponse", () => {
     ]);
   });
 
+  it("skips schema-invalid items (missing product_id) without crashing", () => {
+    const { signals, skipped } = normalizeSwpcResponse([
+      {
+        product_id: "valid",
+        issue_datetime: "2026-06-05 16:39:02.210",
+        message:
+          "Space Weather Message Code: ALTK06\r\nSerial Number: 718\r\nIssue Time: 2026 Jun 05 1639 UTC\r\n\r\nALERT: Geomagnetic K-index of 6",
+      },
+      {
+        issue_datetime: "2026-06-05 17:00:00.000",
+        message: "Missing product_id",
+      },
+    ]);
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]!.providerEventId).toBe("valid");
+    expect(skipped).toEqual([{ productId: "unknown" }]);
+  });
+
+  it("skips items with malformed timestamps", () => {
+    const { signals, skipped } = normalizeSwpcResponse([
+      {
+        product_id: "good",
+        issue_datetime: "2026-06-05 16:39:02.210",
+        message:
+          "Space Weather Message Code: ALTK06\r\nSerial Number: 718\r\nIssue Time: 2026 Jun 05 1639 UTC\r\n\r\nALERT: Geomagnetic K-index of 6",
+      },
+      {
+        product_id: "bad-date",
+        issue_datetime: "not-a-valid-date",
+        message:
+          "Space Weather Message Code: ALTK06\r\nSerial Number: 719\r\nIssue Time: 2026 Jun 05 1639 UTC\r\n\r\nALERT: Geomagnetic K-index of 6",
+      },
+    ]);
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]!.providerEventId).toBe("good");
+    expect(skipped).toEqual([{ productId: "bad-date" }]);
+  });
+
   it("throws on non-array input", () => {
     expect(() => normalizeSwpcResponse({ not: "an array" })).toThrow();
   });

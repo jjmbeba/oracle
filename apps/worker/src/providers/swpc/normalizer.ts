@@ -28,8 +28,6 @@ const swpcAlertItemSchema = z.object({
   message: z.string().min(1),
 }).strict();
 
-const swpcAlertsSchema = z.array(swpcAlertItemSchema);
-
 function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n/g, "\n");
 }
@@ -82,6 +80,7 @@ function normalizeSwpcAlert(item: z.infer<typeof swpcAlertItemSchema>): Normaliz
   if (!title) return null;
 
   const issueDate = new Date(item.issue_datetime + "Z");
+  if (Number.isNaN(issueDate.getTime())) return null;
   const effectiveAt = issueDate.toISOString();
 
   const { dedupeKey } = createSignalDedupeMetadata({
@@ -109,16 +108,29 @@ function normalizeSwpcAlert(item: z.infer<typeof swpcAlertItemSchema>): Normaliz
 export function normalizeSwpcResponse(
   input: unknown,
 ): { signals: NormalizedSignal[]; skipped: { productId: string }[] } {
-  const items = swpcAlertsSchema.parse(input);
+  const rawItems = z.array(z.unknown()).parse(input);
   const signals: NormalizedSignal[] = [];
   const skipped: { productId: string }[] = [];
 
-  for (const item of items) {
-    const signal = normalizeSwpcAlert(item);
+  for (const rawItem of rawItems) {
+    const parsed = swpcAlertItemSchema.safeParse(rawItem);
+    if (!parsed.success) {
+      const productId =
+        typeof rawItem === "object" &&
+        rawItem !== null &&
+        "product_id" in rawItem &&
+        typeof (rawItem as { product_id?: unknown }).product_id === "string"
+          ? (rawItem as { product_id: string }).product_id
+          : "unknown";
+      skipped.push({ productId });
+      continue;
+    }
+
+    const signal = normalizeSwpcAlert(parsed.data);
     if (signal) {
       signals.push(signal);
     } else {
-      skipped.push({ productId: item.product_id });
+      skipped.push({ productId: parsed.data.product_id });
     }
   }
 
