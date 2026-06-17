@@ -7,8 +7,8 @@ export { schema };
 export { watchedRegion } from "./app-schema";
 export { signal } from "./signal-schema";
 export { providerFreshness } from "./signal-schema";
-export { upsertSignal, querySignals, upsertProviderFreshness, queryProviderFreshness } from "./signal-repo";
-export type { SignalQueryFilters, ProviderFreshness } from "./signal-repo";
+export { upsertSignal, querySignals, querySignalFeed, upsertProviderFreshness, queryProviderFreshness } from "./signal-repo";
+export type { SignalQueryFilters, SignalFeedFilters, ProviderFreshness } from "./signal-repo";
 
 export type DatabaseConnection = {
   db: PostgresJsDatabase<typeof schema>;

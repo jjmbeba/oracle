@@ -254,3 +254,36 @@ export async function querySignals(
 
   return rows.map(rowToNormalizedSignal);
 }
+
+const severityOrder = (col: typeof signal.severity) => {
+  return sql`CASE ${col}
+    WHEN 'extreme' THEN 0
+    WHEN 'severe' THEN 1
+    WHEN 'significant' THEN 2
+    WHEN 'moderate' THEN 3
+    WHEN 'minor' THEN 4
+  END`;
+};
+
+export type SignalFeedFilters = {
+  category: SignalCategory;
+  since: Date;
+};
+
+export async function querySignalFeed(
+  db: Database,
+  filters: SignalFeedFilters,
+): Promise<NormalizedSignal[]> {
+  const rows = await db
+    .select()
+    .from(signal)
+    .where(
+      and(
+        gte(signal.effectiveAt, filters.since),
+        eq(signal.category, filters.category),
+      )!,
+    )
+    .orderBy(severityOrder(signal.severity), sql`${signal.effectiveAt} DESC`);
+
+  return rows.map(rowToNormalizedSignal);
+}
