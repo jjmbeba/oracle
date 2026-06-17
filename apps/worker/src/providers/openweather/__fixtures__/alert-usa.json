@@ -1,0 +1,14 @@
+{
+  "id": 9876543,
+  "sender_name": "National Weather Service",
+  "event": "Flood Warning",
+  "start": 1750020000,
+  "end": 1750200000,
+  "description": [
+    {
+      "locale": "en",
+      "description": "The National Weather Service has issued a Flood Warning for the following counties in Kansas. Residents in low-lying areas should move to higher ground immediately. Expect flooding of creeks, streams, and low water crossings."
+    }
+  ],
+  "tags": ["Flood"]
+}

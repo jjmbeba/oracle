@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
+import { createSignalDedupeMetadata } from "@oracle/domain";
 
 const usgsPropertiesSchema = z.object({
   mag: z.number().nullable().optional(),
@@ -48,10 +49,17 @@ function normalizeUsgsFeature(feature: unknown): NormalizedSignal | null {
     ? { kind: "point", coordinates: [g.coordinates[0], g.coordinates[1]] }
     : { kind: "global" };
 
+  const { dedupeKey, providerEventId } = createSignalDedupeMetadata({
+    strategy: "provider-native",
+    category: "earthquake",
+    provider: "usgs",
+    providerEventId: id,
+  });
+
   return {
     provider: "usgs",
-    dedupeKey: `usgs:earthquake:${id}`,
-    providerEventId: id,
+    dedupeKey,
+    providerEventId,
     category: "earthquake",
     title: p.place,
     severity: usgsMagnitudeToSeverity(mag),
