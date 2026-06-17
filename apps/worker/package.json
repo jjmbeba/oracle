@@ -11,6 +11,10 @@
     "test": "vitest run src",
     "format": "oxfmt -c ../../.oxfmt.json src"
   },
+  "dependencies": {
+    "@oracle/domain": "workspace:*",
+    "zod": "^4.1.13"
+  },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "oxfmt": "^0.53.0",

@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "generated": 1781691311000,
+    "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=5.5&orderby=magnitude&limit=5",
+    "title": "USGS Earthquakes",
+    "status": 200,
+    "api": "2.4.0",
+    "limit": 5,
+    "offset": 1
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 7.8,
+        "place": "26 km SW of Kablalan, Philippines",
+        "time": 1780875461803,
+        "updated": 1781665603616,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000srb1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [125.0469, 5.5918, 55.193]
+      },
+      "id": "us7000srb1"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 6.9,
+        "place": "26 km ENE of Calama, Chile",
+        "time": 1779745940045,
+        "updated": 1780612607506,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000t04s"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-68.6779, -22.3975, 109]
+      },
+      "id": "us6000t04s"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 6.7,
+        "place": "43 km ESE of Palu, Indonesia",
+        "time": 1781580464418,
+        "updated": 1781691022711,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000st95"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [120.199, -1.1173, 10]
+      },
+      "id": "us7000st95"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 6.6,
+        "place": "southern East Pacific Rise",
+        "time": 1779298981865,
+        "updated": 1781202101785,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000sz1d"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.2979, -55.9978, 10]
+      },
+      "id": "us6000sz1d"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mag": 6.5,
+        "place": "20 km WSW of Balangonan, Philippines",
+        "time": 1780880111958,
+        "updated": 1781649039586,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000srcg"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [125.1951, 5.4762, 69.004]
+      },
+      "id": "us7000srcg"
+    }
+  ],
+  "bbox": [-122.2979, -55.9978, 10, 125.1951, 5.5918, 109]
+}
