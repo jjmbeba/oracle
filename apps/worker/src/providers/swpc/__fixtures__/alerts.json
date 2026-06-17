@@ -1,0 +1,62 @@
+[
+  {
+    "product_id": "K04A",
+    "issue_datetime": "2026-06-13 21:01:31.343",
+    "message": "Space Weather Message Code: ALTK04\r\nSerial Number: 2666\r\nIssue Time: 2026 Jun 13 2101 UTC\r\n\r\nALERT: Geomagnetic K-index of 4 \nThreshold Reached: 2026 Jun 13 2059 UTC\nSynoptic Period: 1800-2100\nActive Warning: YES\nComment: \r\n\n\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+    "product_id": "K05A",
+    "issue_datetime": "2026-06-11 20:40:33.250",
+    "message": "Space Weather Message Code: ALTK05\r\nSerial Number: 2027\r\nIssue Time: 2026 Jun 11 2040 UTC\r\n\r\nALERT: Geomagnetic K-index of 5 \nThreshold Reached: 2026 Jun 11 2040 UTC\nSynoptic Period: 1800-2100\nActive Warning: YES\nNoaa Scale: G1 - Minor\nComment: \r\n\nNOAA Scale: G1 - Minor\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nSpacecraft - Minor impact on satellite operations possible.\r\nAurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine."
+  },
+  {
+    "product_id": "K06A",
+    "issue_datetime": "2026-06-05 16:39:02.210",
+    "message": "Space Weather Message Code: ALTK06\r\nSerial Number: 718\r\nIssue Time: 2026 Jun 05 1639 UTC\r\n\r\nALERT: Geomagnetic K-index of 6 \nThreshold Reached: 2026 Jun 05 1638 UTC\nSynoptic Period: 1500-1800\nActive Warning: YES\nNoaa Scale: G2 - Moderate\nComment: \r\n\nNOAA Scale: G2 - Moderate\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.\r\nInduced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.\r\nSpacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.\r\nRadio - HF (high frequency) radio propagation can fade at higher latitudes.\r\nAurora - Aurora may be seen as low as New York to Wisconsin to Washington state."
+  },
+  {
+    "product_id": "K07W",
+    "issue_datetime": "2026-06-05 17:16:54.460",
+    "message": "Space Weather Message Code: WARK07\r\nSerial Number: 150\r\nIssue Time: 2026 Jun 05 1716 UTC\r\n\r\nWARNING: Geomagnetic K-index of 7 or greater expected \nValid From: 2026 Jun 05 1714 UTC\nValid To: 2026 Jun 05 2359 UTC\nWarning Conditions: Onset\nNoaa Scale: G3 - Greater\nComment: \r\n\nNOAA Scale: G3 - Greater"
+  },
+  {
+    "product_id": "XM5A",
+    "issue_datetime": "2026-06-03 11:41:23.617",
+    "message": "Space Weather Message Code: ALTXMF\r\nSerial Number: 531\r\nIssue Time: 2026 Jun 03 1141 UTC\r\n\r\nALERT: X-Ray Flux exceeded M5 \nThreshold Reached: 2026 Jun 03 1141 UTC\nNoaa Scale: R2 - Moderate\nComment: \r\n\nNOAA Scale: R2 - Moderate\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact centered on sub-solar point on the sunlit side of Earth. Extent of blackout of HF (high frequency) radio communication dependent upon current X-ray Flux intensity. For real-time information on affected area and expected duration please see http://www.swpc.noaa.gov/products/d-region-absorption-predictions-d-rap."
+  },
+  {
+    "product_id": "XX0S",
+    "issue_datetime": "2026-06-03 11:59:48.137",
+    "message": "Space Weather Message Code: SUMX01\r\nSerial Number: 218\r\nIssue Time: 2026 Jun 03 1159 UTC\r\n\r\nSUMMARY: X-ray Event exceeded X1 \nBegin Time: 2026 Jun 03 1119 UTC\nMaximum Time: 2026 Jun 03 1128 UTC\nEnd Time: 2026 Jun 03 1135 UTC\nXray Class: X1.0\nOptical Class: \nLocation: N17W19\nNoaa Scale: R3 - Strong\nComment: GOES-18 outage so using GOES-19\n\r\n\nGOES-18 outage so using GOES-19NOAA Scale: R3 - Strong\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact consists of large portions of the sunlit side of Earth, strongest at the sub-solar point.\r\nRadio - Wide area blackout of HF (high frequency) radio communication for about an hour."
+  },
+  {
+    "product_id": "P11A",
+    "issue_datetime": "2026-05-26 00:35:09.697",
+    "message": "Space Weather Message Code: ALTPX1\r\nSerial Number: 365\r\nIssue Time: 2026 May 26 0035 UTC\r\n\r\nALERT: Proton Event 10meV Integral Flux exceeded 10pfu \nBegin Time: 2026 May 26 0010 UTC\nNoaa Scale: S1 - Minor\nComment: \r\n\nNOAA Scale: S1 - Minor"
+  },
+  {
+    "product_id": "EF3A",
+    "issue_datetime": "2026-06-16 11:24:14.140",
+    "message": "Space Weather Message Code: ALTEF3\r\nSerial Number: 3702\r\nIssue Time: 2026 Jun 16 1124 UTC\r\n\r\nCONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu\nContinuation of Serial Number: 3701\nBegin Time: 2026 Jun 13 1332 UTC\nYesterday Maximum 2MeV Flux: 1489 pfu\n\r\n\n"
+  },
+  {
+    "product_id": "A30F",
+    "issue_datetime": "2026-06-14 08:30:13.163",
+    "message": "Space Weather Message Code: WATA30\r\nSerial Number: 276\r\nIssue Time: 2026 Jun 14 0830 UTC\r\n\r\nCANCELLED WATCH: Geomagnetic Storm Category G2 Predicted \nCancel Serial Number: 275\nOriginal Issued Time: 2026 Jun 11 2029 UTC\nG1 (Minor) geomagnetic storm conditions are no longer expected. \r\n\nG1 (Minor) geomagnetic storm conditions are no longer expected. \r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.\r\nInduced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.\r\nSpacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.\r\nRadio - HF (high frequency) radio propagation can fade at higher latitudes.\r\nAurora - Aurora may be seen as low as New York to Wisconsin to Washington state."
+  },
+  {
+    "product_id": "TIIA",
+    "issue_datetime": "2026-06-11 00:40:36.660",
+    "message": "Space Weather Message Code: ALTTP2\r\nSerial Number: 1503\r\nIssue Time: 2026 Jun 11 0040 UTC\r\n\r\nALERT: Type II Radio Emission \nBegin Time: 2026 Jun 11 0013 UTC\nEstimate Velocity: 918 km/s\nComment: \r\n\n"
+  },
+  {
+    "product_id": "MSIS",
+    "issue_datetime": "2026-06-05 05:13:38.727",
+    "message": "Space Weather Message Code: SUMSUD\r\nSerial Number: 300\r\nIssue Time: 2026 Jun 05 0513 UTC\r\n\r\nSUMMARY: Geomagnetic Sudden Impulse \nObserved: 2026 Jun 05 0511 UTC\nDeviation: 70 nT\nStation: MEA\nComment: \r\n\n"
+  },
+  {
+    "product_id": "K05W",
+    "issue_datetime": "2026-06-11 20:15:04.513",
+    "message": "Space Weather Message Code: WARK05\r\nSerial Number: 2241\r\nIssue Time: 2026 Jun 11 2015 UTC\r\n\r\nWARNING: Geomagnetic K-index of 5 expected \nValid From: 2026 Jun 11 2014 UTC\nValid To: 2026 Jun 12 0300 UTC\nWarning Conditions: Onset\nNoaa Scale: G1 - Minor\nComment: \r\n\nNOAA Scale: G1 - Minor\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nSpacecraft - Minor impact on satellite operations possible.\r\nAurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine."
+  }
+]
