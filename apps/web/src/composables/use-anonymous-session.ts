@@ -19,7 +19,9 @@ export function useAnonymousSession(client: AuthClient = authClient) {
     if (initialized) return;
     if (initPromise) return initPromise;
 
-    initPromise = createSession();
+    initPromise = createSession().finally(() => {
+      initPromise = null;
+    });
     return initPromise;
   }
 
@@ -39,14 +41,13 @@ export function useAnonymousSession(client: AuthClient = authClient) {
 
       if (!error) {
         authState.value = "authenticated";
+        initialized = true;
       } else {
         authState.value = "unavailable";
       }
     } catch {
       authState.value = "unavailable";
     }
-
-    initialized = true;
   }
 
   return { authState, initialize };

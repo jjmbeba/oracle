@@ -93,27 +93,32 @@ function getWatchedKind(region: WatchedRegion): string {
       </button>
 
       <div v-if="watchedOpen" class="watched-list">
-        <button
+        <div
           v-for="wr in watchedRegions"
           :key="wr.id"
           class="watched-item"
-          type="button"
-          @click="emit('selectRegion', wr.region ?? undefined!)"
         >
-          <span class="watched-item-main">
-            <span class="watched-item-name">{{ wr.region?.displayName ?? wr.regionId }}</span>
-            <span class="watched-item-kind">{{ getWatchedKind(wr) }}</span>
-          </span>
-          <span class="watched-item-meta">{{ getWatchedMeta(wr) }}</span>
+          <button
+            class="watched-item-select"
+            type="button"
+            :disabled="!wr.region"
+            @click="wr.region && emit('selectRegion', wr.region)"
+          >
+            <span class="watched-item-main">
+              <span class="watched-item-name">{{ wr.region?.displayName ?? wr.regionId }}</span>
+              <span class="watched-item-kind">{{ getWatchedKind(wr) }}</span>
+            </span>
+            <span class="watched-item-meta">{{ getWatchedMeta(wr) }}</span>
+          </button>
           <button
             class="unwatch-btn"
             type="button"
-            @click.stop="emit('unwatchRegion', wr.regionId)"
+            @click="emit('unwatchRegion', wr.regionId)"
             title="Unwatch region"
           >
             &times;
           </button>
-        </button>
+        </div>
       </div>
     </div>
 
@@ -411,19 +416,33 @@ input:focus-visible {
 
 .watched-item {
   display: flex;
-  align-items: center;
   gap: 8px;
   width: 100%;
   padding: 6px 8px;
   border: 1px solid transparent;
+
+  &:hover {
+    border-color: $border-hover;
+  }
+}
+
+.watched-item-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
   background: none;
   color: $text-primary;
   cursor: pointer;
   font: inherit;
   text-align: left;
 
-  &:hover {
-    border-color: $border-hover;
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 }
 

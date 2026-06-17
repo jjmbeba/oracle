@@ -107,11 +107,12 @@ export async function watchRegion(
     body: JSON.stringify({ regionId }),
   });
 
-  const body: unknown = await response.json();
-
   if (!response.ok) {
+    const body: unknown = await safeJson(response);
     throw new Error(getErrorMessage(body));
   }
+
+  const body: unknown = await response.json();
 
   if (!isWatchRegionResponse(body)) {
     throw new Error("Watch region returned an invalid response");

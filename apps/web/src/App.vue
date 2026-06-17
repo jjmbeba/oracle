@@ -16,8 +16,10 @@ import {
 const selectedRegion = ref<RegionSearchResult | null>(null);
 
 const { healthState, healthLabel } = useApiHealthStatus();
-const { initialize } = useAnonymousSession();
-const { data: watchedRegions } = useWatchedRegionsQuery();
+const { authState, initialize } = useAnonymousSession();
+const { data: watchedRegions } = useWatchedRegionsQuery(
+  computed(() => authState.value === "authenticated"),
+);
 const { mutate: doWatch } = useWatchRegionMutation();
 const { mutate: doUnwatch } = useUnwatchRegionMutation();
 
