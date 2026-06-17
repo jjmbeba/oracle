@@ -1,0 +1,14 @@
+{
+  "id": 1234567,
+  "sender_name": "Instituto Nacional de Meteorologia",
+  "event": "",
+  "start": 1750000000,
+  "end": 1750086400,
+  "description": [
+    {
+      "locale": "pt-BR",
+      "description": "INMET publica aviso iniciando em: 15/06/2026 10:00. Perigo potencial. Ventos variando entre 40 km/h e 60 km/h. Baixo risco de queda de galhos de árvores. Observe as seguintes orientações: Evite se abrigar debaixo de árvores, pois há leve risco de queda e descargas elétricas e não estacione veículos próximos a torres de transmissão e placas de propaganda."
+    }
+  ],
+  "tags": ["Wind"]
+}

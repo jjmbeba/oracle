@@ -48,7 +48,7 @@ describe("normalizeUsgsResponse", () => {
 
     const first = signals[0]!;
     expect(first.provider).toBe("usgs");
-    expect(first.dedupeKey).toBe("usgs:earthquake:us7000srb1");
+    expect(first.dedupeKey).toBe("signal:earthquake:usgs:provider-native:us7000srb1");
     expect(first.providerEventId).toBe("us7000srb1");
     expect(first.category).toBe("earthquake");
     expect(first.severity).toBe("extreme");

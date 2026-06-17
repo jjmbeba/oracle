@@ -1,0 +1,18 @@
+{
+  "id": 7654321,
+  "sender_name": "Deutscher Wetterdienst",
+  "event": "",
+  "start": 1750050000,
+  "end": 1750100000,
+  "description": [
+    {
+      "locale": "en",
+      "description": "There is a risk of thunderstorms with heavy rain and wind gusts (level 1 of 4). Occurrence: widespread. Max. gusts: 60-85 km/h. Precipitation amounts: 15-25 l/m² per hour. Recommended actions: Secure loose objects. Trees may fall or be uprooted. Be careful when driving."
+    },
+    {
+      "locale": "de",
+      "description": "Es besteht die Gefahr durch Gewitter mit schweren Regenfällen und Windböen (Stufe 1 von 4). Vorkommen: weitverbreitet. Max. Böen: 60-85 km/h. Niederschlagsmengen: 15-25 l/m² pro Stunde."
+    }
+  ],
+  "tags": ["Thunderstorm", "Wind"]
+}
