@@ -9,7 +9,7 @@ import type {
   SignalCategory,
   SignalScope,
 } from "@oracle/domain";
-import { signal } from "./signal-schema";
+import { providerFreshness, signal } from "./signal-schema";
 import type { schema } from "./schema";
 
 export type SignalQueryFilters = {
@@ -166,6 +166,64 @@ export async function upsertSignal(
     .returning();
 
   return rowToNormalizedSignal(row);
+}
+
+export type ProviderFreshness = {
+  provider: string;
+  category: SignalCategory;
+  lastSuccessfulPollAt: Date;
+};
+
+export async function upsertProviderFreshness(
+  db: Database,
+  freshness: ProviderFreshness,
+): Promise<ProviderFreshness> {
+  const [row] = await db
+    .insert(providerFreshness)
+    .values({
+      provider: freshness.provider,
+      category: freshness.category,
+      lastSuccessfulPollAt: freshness.lastSuccessfulPollAt,
+    })
+    .onConflictDoUpdate({
+      target: [providerFreshness.provider, providerFreshness.category],
+      set: {
+        lastSuccessfulPollAt: sql`excluded.last_successful_poll_at`,
+        updatedAt: sql`now()`,
+      },
+    })
+    .returning();
+
+  return {
+    provider: row.provider,
+    category: row.category as SignalCategory,
+    lastSuccessfulPollAt: row.lastSuccessfulPollAt,
+  };
+}
+
+export async function queryProviderFreshness(
+  db: Database,
+  providerName: string,
+  category: SignalCategory,
+): Promise<ProviderFreshness | null> {
+  const [row] = await db
+    .select()
+    .from(providerFreshness)
+    .where(
+      and(
+        eq(providerFreshness.provider, providerName),
+        eq(providerFreshness.category, category),
+      )!,
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    provider: row.provider,
+    category: row.category as SignalCategory,
+    lastSuccessfulPollAt: row.lastSuccessfulPollAt,
+  };
 }
 
 export async function querySignals(

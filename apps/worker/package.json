@@ -12,7 +12,10 @@
     "format": "oxfmt -c ../../.oxfmt.json src"
   },
   "dependencies": {
+    "@oracle/db": "workspace:*",
     "@oracle/domain": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {

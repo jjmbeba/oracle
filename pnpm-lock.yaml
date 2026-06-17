@@ -112,9 +112,18 @@ importers:
 
   apps/worker:
     dependencies:
+      '@oracle/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@oracle/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(kysely@0.29.2)(postgres@3.4.9)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
       zod:
         specifier: ^4.1.13
         version: 4.4.3
