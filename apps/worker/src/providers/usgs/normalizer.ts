@@ -4,8 +4,12 @@ import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
 const usgsPropertiesSchema = z.object({
   mag: z.number().nullable().optional(),
   place: z.string(),
-  time: z.number(),
-  updated: z.number(),
+  time: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
+    error: "Invalid epoch milliseconds for properties.time",
+  }),
+  updated: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
+    error: "Invalid epoch milliseconds for properties.updated",
+  }),
   url: z.string(),
 }).strict();
 
@@ -72,8 +76,11 @@ export function normalizeUsgsResponse(
     if (signal) {
       signals.push(signal);
     } else {
-      const raw = feature as Record<string, unknown>;
-      skipped.push({ id: typeof raw.id === "string" ? raw.id : "unknown" });
+      const raw =
+        feature != null && typeof feature === "object"
+          ? (feature as Record<string, unknown>)
+          : null;
+      skipped.push({ id: raw !== null && typeof raw.id === "string" ? raw.id : "unknown" });
     }
   }
 
