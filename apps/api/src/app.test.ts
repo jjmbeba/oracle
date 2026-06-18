@@ -386,3 +386,140 @@ describe("signal feed", () => {
     expect(providers).toEqual(["prov-a"]);
   });
 });
+
+describe("signal map", () => {
+  it("returns GeoJSON FeatureCollection with point-scoped signals", async () => {
+    const signal = makeSignal({
+      title: "M 5.2 Test",
+      scope: { kind: "point", coordinates: [36.81, -1.28] },
+    });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.type).toBe("FeatureCollection");
+    expect(body.features).toHaveLength(1);
+
+    const feature = body.features[0];
+
+    expect(feature.type).toBe("Feature");
+    expect(feature.geometry.type).toBe("Point");
+    expect(feature.geometry.coordinates).toEqual([36.81, -1.28]);
+    expect(feature.properties.title).toBe("M 5.2 Test");
+  });
+
+  it("includes proper signal id when providerEventId is present", async () => {
+    const signal = makeSignal({
+      providerEventId: "usgs:abc123",
+      scope: { kind: "point", coordinates: [0, 0] },
+    });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+    const body = await response.json();
+
+    expect(body.features[0].properties.id).toBe("usgs:abc123");
+  });
+
+  it("falls back to dedupeKey when providerEventId is absent", async () => {
+    const signal = makeSignal({
+      providerEventId: undefined,
+      dedupeKey: "signal:earthquake:test:fallback",
+      scope: { kind: "point", coordinates: [0, 0] },
+    });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+    const body = await response.json();
+
+    expect(body.features[0].properties.id).toBe(
+      "signal:earthquake:test:fallback",
+    );
+  });
+
+  it("includes severity, confidence, category, and source data in properties", async () => {
+    const signal = makeSignal({
+      provider: "usgs",
+      category: "earthquake",
+      title: "M 6.1 Test",
+      severity: "severe",
+      confidence: "high",
+      scope: { kind: "point", coordinates: [139.65, 35.68] },
+      sourceLink: {
+        url: "https://earthquake.usgs.gov/example",
+        label: "USGS",
+      },
+    });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+    const body = await response.json();
+    const props = body.features[0].properties;
+
+    expect(props.severity).toBe("severe");
+    expect(props.confidence).toBe("high");
+    expect(props.category).toBe("earthquake");
+    expect(props.sourceLinkUrl).toBe("https://earthquake.usgs.gov/example");
+    expect(props.sourceLinkLabel).toBe("USGS");
+  });
+
+  it("returns empty FeatureCollection when no signals exist", async () => {
+    const testApp = signalFeedApp([], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.type).toBe("FeatureCollection");
+    expect(body.features).toEqual([]);
+  });
+
+  it("skips non-point scoped signals", async () => {
+    const globalSignal = makeSignal({
+      title: "Global",
+      scope: { kind: "global" },
+    });
+    const pointSignal = makeSignal({
+      title: "Point",
+      dedupeKey: "sig:point",
+      scope: { kind: "point", coordinates: [0, 0] },
+    });
+    const testApp = signalFeedApp([globalSignal, pointSignal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+    const body = await response.json();
+
+    expect(body.features).toHaveLength(1);
+    expect(body.features[0].properties.title).toBe("Point");
+  });
+
+  it("returns 400 for invalid category", async () => {
+    const testApp = signalFeedApp([], null);
+
+    const response = await testApp.request("/signals/map?category=invalid");
+
+    expect(response.status).toBe(400);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("invalid_category");
+  });
+
+  it("returns 400 when category is missing", async () => {
+    const testApp = signalFeedApp([], null);
+
+    const response = await testApp.request("/signals/map");
+
+    expect(response.status).toBe(400);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("invalid_category");
+  });
+});
