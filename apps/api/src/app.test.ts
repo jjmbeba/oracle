@@ -422,7 +422,7 @@ describe("signal map", () => {
     const response = await testApp.request("/signals/map?category=earthquake");
     const body = await response.json();
 
-    expect(body.features[0].properties.id).toBe("usgs:abc123");
+    expect(body.features[0].id).toBe("usgs:abc123");
   });
 
   it("falls back to dedupeKey when providerEventId is absent", async () => {
@@ -436,7 +436,7 @@ describe("signal map", () => {
     const response = await testApp.request("/signals/map?category=earthquake");
     const body = await response.json();
 
-    expect(body.features[0].properties.id).toBe(
+    expect(body.features[0].id).toBe(
       "signal:earthquake:test:fallback",
     );
   });

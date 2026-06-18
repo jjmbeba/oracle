@@ -1,5 +1,11 @@
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { config } from "dotenv";
 import { startWorker } from "./worker";
+
+config({
+  path: fileURLToPath(new URL("../../../.env", import.meta.url)),
+  quiet: true,
+});
 
 export {
   defaultPlaceholderIntervalMs,

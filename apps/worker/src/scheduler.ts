@@ -7,7 +7,7 @@ export type ScheduledJob = {
 };
 
 export type Scheduler = {
-  registerIntervalJob(job: ScheduledJob): void;
+  registerIntervalJob(job: ScheduledJob): Promise<void>;
   stop(): Promise<void>;
 };
 
@@ -74,6 +74,8 @@ export function createScheduler(options: SchedulerOptions): Scheduler {
         inFlight: undefined,
       };
       jobs.set(job.name, state);
+      runJob(state);
+      return state.inFlight ?? Promise.resolve();
     },
     async stop() {
       for (const state of jobs.values()) {

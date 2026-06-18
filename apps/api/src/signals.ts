@@ -44,17 +44,24 @@ type FreshnessResponse = {
   lastSuccessfulPollAt: string;
 };
 
+function parseCategoryParam(raw: string | undefined): SignalCategory | null {
+  if (
+    typeof raw === "string" &&
+    (signalCategories as readonly string[]).includes(raw)
+  ) {
+    return raw as SignalCategory;
+  }
+  return null;
+}
+
 export function createSignalFeedRoutes(options: SignalFeedOptions) {
   const router = new Hono();
   const { store } = options;
 
   router.get("/feed", async (c) => {
-    const rawCategory = c.req.query("category");
+    const category = parseCategoryParam(c.req.query("category"));
 
-    if (
-      typeof rawCategory !== "string" ||
-      !(signalCategories as readonly string[]).includes(rawCategory)
-    ) {
+    if (!category) {
       return c.json(
         {
           error: {
@@ -65,8 +72,6 @@ export function createSignalFeedRoutes(options: SignalFeedOptions) {
         400,
       );
     }
-
-    const category = rawCategory as SignalCategory;
     const since = new Date(Date.now() - SIGNAL_WINDOW_MS);
 
     const signals = await store.queryFeed(category, since);
@@ -102,12 +107,9 @@ export function createSignalMapRoutes(options: SignalFeedOptions) {
   const { store } = options;
 
   router.get("/map", async (c) => {
-    const rawCategory = c.req.query("category");
+    const category = parseCategoryParam(c.req.query("category"));
 
-    if (
-      typeof rawCategory !== "string" ||
-      !(signalCategories as readonly string[]).includes(rawCategory)
-    ) {
+    if (!category) {
       return c.json(
         {
           error: {
@@ -118,16 +120,14 @@ export function createSignalMapRoutes(options: SignalFeedOptions) {
         400,
       );
     }
-
-    const category = rawCategory as SignalCategory;
     const since = new Date(Date.now() - SIGNAL_WINDOW_MS);
     const signals = await store.queryFeed(category, since);
 
-    const features: Array<{
+    type GeoJsonFeature = {
       type: "Feature";
+      id: string;
       geometry: { type: "Point"; coordinates: [number, number] };
       properties: {
-        id: string;
         provider: string;
         category: string;
         title: string;
@@ -137,7 +137,9 @@ export function createSignalMapRoutes(options: SignalFeedOptions) {
         sourceLinkUrl?: string;
         sourceLinkLabel?: string;
       };
-    }> = [];
+    };
+
+    const features: GeoJsonFeature[] = [];
 
     for (const signal of signals) {
       if (signal.scope.kind !== "point") continue;
@@ -146,9 +148,9 @@ export function createSignalMapRoutes(options: SignalFeedOptions) {
 
       features.push({
         type: "Feature",
+        id: signal.providerEventId ?? signal.dedupeKey,
         geometry: { type: "Point", coordinates: [longitude, latitude] },
         properties: {
-          id: signal.providerEventId ?? signal.dedupeKey,
           provider: signal.provider,
           category: signal.category,
           title: signal.title,

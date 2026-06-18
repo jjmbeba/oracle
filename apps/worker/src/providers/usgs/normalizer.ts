@@ -12,7 +12,7 @@ const usgsPropertiesSchema = z.object({
     error: "Invalid epoch milliseconds for properties.updated",
   }),
   url: z.string(),
-}).strict();
+}).passthrough();
 
 const usgsFeatureSchema = z.object({
   type: z.literal("Feature"),
@@ -22,7 +22,7 @@ const usgsFeatureSchema = z.object({
     coordinates: z.tuple([z.number(), z.number()]).rest(z.number()),
   }).nullable(),
   properties: usgsPropertiesSchema,
-}).strict();
+}).passthrough();
 
 const usgsResponseSchema = z.object({
   type: z.literal("FeatureCollection"),
