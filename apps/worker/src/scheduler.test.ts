@@ -24,11 +24,6 @@ function createTestLogger() {
   };
 }
 
-async function flushPromises(): Promise<void> {
-  await Promise.resolve();
-  await Promise.resolve();
-}
-
 describe("worker scheduler", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -45,14 +40,11 @@ describe("worker scheduler", () => {
       now: () => 25,
     });
 
-    scheduler.registerIntervalJob({
+    await scheduler.registerIntervalJob({
       name: "placeholder",
       intervalMs: 1000,
       run,
     });
-
-    await vi.advanceTimersByTimeAsync(1000);
-    await flushPromises();
 
     expect(run).toHaveBeenCalledTimes(1);
     expect(records).toEqual([
@@ -62,6 +54,13 @@ describe("worker scheduler", () => {
         durationMs: 0,
       },
     ]);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(records).toHaveLength(2);
 
     await scheduler.stop();
   });
@@ -75,19 +74,26 @@ describe("worker scheduler", () => {
       .mockResolvedValueOnce(undefined);
     const scheduler = createScheduler({ logger });
 
-    scheduler.registerIntervalJob({
+    await scheduler.registerIntervalJob({
       name: "placeholder",
       intervalMs: 1000,
       run,
     });
 
-    await vi.advanceTimersByTimeAsync(1000);
-    await flushPromises();
-    await vi.advanceTimersByTimeAsync(1000);
-    await flushPromises();
+    expect(records.map((record) => record.event)).toEqual(["job.failure"]);
 
-    expect(run).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1000);
+    await Promise.resolve();
+    await Promise.resolve();
+
     expect(records.map((record) => record.event)).toEqual(["job.failure", "job.success"]);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(run).toHaveBeenCalledTimes(3);
+    expect(records.map((record) => record.event)).toEqual(["job.failure", "job.success", "job.success"]);
 
     await scheduler.stop();
   });
@@ -110,10 +116,15 @@ describe("worker scheduler", () => {
       run,
     });
 
+    await Promise.resolve();
+    await Promise.resolve();
+
     await vi.advanceTimersByTimeAsync(1000);
-    await flushPromises();
+    await Promise.resolve();
+    await Promise.resolve();
     await vi.advanceTimersByTimeAsync(1000);
-    await flushPromises();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(run).toHaveBeenCalledTimes(1);
     expect(records).toEqual([
@@ -121,10 +132,15 @@ describe("worker scheduler", () => {
         event: "job.skipped",
         jobName: "placeholder",
       },
+      {
+        event: "job.skipped",
+        jobName: "placeholder",
+      },
     ]);
 
     resolveRun?.();
-    await flushPromises();
+    await Promise.resolve();
+    await Promise.resolve();
     await scheduler.stop();
   });
 
@@ -134,16 +150,19 @@ describe("worker scheduler", () => {
     const run = vi.fn();
     const scheduler = createScheduler({ logger });
 
-    scheduler.registerIntervalJob({
+    await scheduler.registerIntervalJob({
       name: "placeholder",
       intervalMs: 1000,
       run,
     });
 
     await scheduler.stop();
+
+    expect(run).toHaveBeenCalledTimes(1);
+
     vi.advanceTimersByTime(1000);
 
-    expect(run).not.toHaveBeenCalled();
+    expect(run).toHaveBeenCalledTimes(1);
   });
 
   it("rejects duplicate job names", async () => {
@@ -151,7 +170,7 @@ describe("worker scheduler", () => {
     const { logger } = createTestLogger();
     const scheduler = createScheduler({ logger });
 
-    scheduler.registerIntervalJob({
+    await scheduler.registerIntervalJob({
       name: "placeholder",
       intervalMs: 1000,
       run: vi.fn(),
