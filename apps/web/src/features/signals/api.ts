@@ -4,7 +4,13 @@ export type SignalFeedScope =
   | { readonly kind: "global" }
   | { readonly kind: "region"; readonly regionId: string }
   | { readonly kind: "point"; readonly coordinates: readonly [number, number] }
-  | { readonly kind: "geometry" };
+  | {
+      readonly kind: "geometry";
+      readonly geometry: {
+        readonly type: string;
+        readonly coordinates: unknown;
+      };
+    };
 
 export type SignalFeedItem = {
   readonly provider: string;
@@ -48,7 +54,13 @@ function isSignalFeedScope(value: unknown): value is SignalFeedScope {
       typeof value.coordinates[1] === "number"
     );
   }
-  if (value.kind === "geometry") return true;
+  if (value.kind === "geometry") {
+    return (
+      isRecord(value.geometry) &&
+      typeof value.geometry.type === "string" &&
+      value.geometry.coordinates !== undefined
+    );
+  }
 
   return false;
 }
@@ -66,6 +78,10 @@ function isSignalFeedItem(value: unknown): value is SignalFeedItem {
   if (!isSignalFeedScope(value.scope)) return false;
   if (value.sourceLink !== undefined) {
     if (!isRecord(value.sourceLink) || typeof value.sourceLink.url !== "string") return false;
+    if (
+      value.sourceLink.label !== undefined &&
+      typeof value.sourceLink.label !== "string"
+    ) return false;
   }
   return true;
 }

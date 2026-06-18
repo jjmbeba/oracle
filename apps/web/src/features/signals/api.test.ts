@@ -122,4 +122,32 @@ describe("fetchSignalFeed", () => {
 
     expect(result.signals[0].title).toBe("No source");
   });
+
+  it("rejects geometry scope without geometry payload", async () => {
+    await expect(
+      fetchSignalFeed("earthquake", async () => {
+        return Response.json({
+          signals: [{
+            ...sampleSignal,
+            scope: { kind: "geometry" },
+          }],
+          freshness: [],
+        });
+      }),
+    ).rejects.toThrow("Signal feed returned an invalid response");
+  });
+
+  it("rejects sourceLink with non-string label", async () => {
+    await expect(
+      fetchSignalFeed("earthquake", async () => {
+        return Response.json({
+          signals: [{
+            ...sampleSignal,
+            sourceLink: { url: "https://example.com", label: 42 },
+          }],
+          freshness: [],
+        });
+      }),
+    ).rejects.toThrow("Signal feed returned an invalid response");
+  });
 });
