@@ -5,6 +5,7 @@ import type { AppBindings } from "./auth-middleware";
 import { regionsRoutes } from "./regions";
 import {
   createSignalFeedRoutes,
+  createSignalMapRoutes,
   type SignalFeedStore,
 } from "./signals";
 import {
@@ -42,6 +43,7 @@ export function createApp(options: AppOptions = {}) {
 
   if (options.signals) {
     app.route("/signals", createSignalFeedRoutes({ store: options.signals }));
+    app.route("/signals", createSignalMapRoutes({ store: options.signals }));
   }
 
   if (options.watchedRegions) {
