@@ -6,10 +6,8 @@ import { createAuth } from "./auth";
 import { createAuthMiddleware } from "./auth-middleware";
 import { getAuthEnv, getRequiredEnv } from "./env";
 import { loadRootEnv } from "./load-root-env";
-import {
-  createDrizzleWatchedRegionStore,
-  createWatchedRegionsRoutes,
-} from "./watched-regions";
+import { createDrizzleSignalFeedStore } from "./signals";
+import { createDrizzleWatchedRegionStore } from "./watched-regions";
 
 import type { ServerType } from "@hono/node-server";
 
@@ -67,12 +65,10 @@ export function startApiDevServer(options: StartApiDevServerOptions = {}): ApiRu
   const auth = createAuth(connection, getAuthEnv(env));
   const { requireAuth } = createAuthMiddleware(auth);
   const watchedRegionsStore = createDrizzleWatchedRegionStore(connection.db);
-  const watchedRegionsRoutes = createWatchedRegionsRoutes({
-    store: watchedRegionsStore,
-    requireAuth,
-  });
+  const signalFeedStore = createDrizzleSignalFeedStore(connection.db);
   const app = createApp({
     auth,
+    signals: signalFeedStore,
     watchedRegions: {
       store: watchedRegionsStore,
       requireAuth,

@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
+import type { ProviderFreshness } from "@oracle/db";
+import type { NormalizedSignal } from "@oracle/domain";
 import { app, createApp } from "./app";
+import type { SignalFeedStore } from "./signals";
+
+function makeSignal(overrides: Partial<NormalizedSignal>): NormalizedSignal {
+  return {
+    provider: "test-provider",
+    dedupeKey: "signal:earthquake:test-provider:provider-native:test",
+    category: "earthquake",
+    title: "Test Signal",
+    severity: "moderate",
+    confidence: "medium",
+    effectiveAt: new Date().toISOString(),
+    scope: { kind: "global" },
+    ...overrides,
+  };
+}
+
+function signalFeedApp(
+  signals: NormalizedSignal[],
+  freshness?: ProviderFreshness | null,
+) {
+  const store: SignalFeedStore = {
+    queryFeed: async () => signals,
+    queryFreshness: async () => freshness ?? null,
+  };
+  return createApp({ signals: store });
+}
 
 describe("api shell", () => {
   it("exposes API health", async () => {
@@ -237,5 +265,124 @@ describe("api shell", () => {
     const response = await app.request("/regions/banana/dossier");
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("signal feed", () => {
+  it("returns signals and freshness for a valid category", async () => {
+    const signal = makeSignal({ title: "M 5.2 Test" });
+    const testApp = signalFeedApp([signal], {
+      provider: "test-provider",
+      category: "earthquake",
+      lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+    });
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.signals).toHaveLength(1);
+    expect(body.signals[0].title).toBe("M 5.2 Test");
+    expect(body.freshness).toHaveLength(1);
+    expect(body.freshness[0].lastSuccessfulPollAt).toBe(
+      "2026-06-18T12:00:00.000Z",
+    );
+  });
+
+  it("returns empty signals and empty freshness when no data", async () => {
+    const testApp = signalFeedApp([], null);
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.signals).toEqual([]);
+    expect(body.freshness).toEqual([]);
+  });
+
+  it("returns 400 for invalid category", async () => {
+    const testApp = signalFeedApp([], null);
+    const response = await testApp.request("/signals/feed?category=invalid");
+
+    expect(response.status).toBe(400);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("invalid_category");
+  });
+
+  it("returns 400 when category is missing", async () => {
+    const testApp = signalFeedApp([], null);
+    const response = await testApp.request("/signals/feed");
+
+    expect(response.status).toBe(400);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("invalid_category");
+  });
+
+  it("passes signals through from the store in store order", async () => {
+    const signalA = makeSignal({
+      dedupeKey: "sig:a",
+      title: "Signal A",
+    });
+    const signalB = makeSignal({
+      dedupeKey: "sig:b",
+      title: "Signal B",
+    });
+    const testApp = signalFeedApp([signalA, signalB]);
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.signals).toHaveLength(2);
+    expect(body.signals[0].title).toBe("Signal A");
+    expect(body.signals[1].title).toBe("Signal B");
+  });
+
+  it("includes per-provider freshness when signals exist", async () => {
+    const signalA = makeSignal({
+      dedupeKey: "signal:earthquake:prov-a:provider-native:a",
+      title: "From A",
+      provider: "prov-a",
+    });
+    const signalB = makeSignal({
+      dedupeKey: "signal:earthquake:prov-b:provider-native:b",
+      title: "From B",
+      provider: "prov-b",
+    });
+    const store: SignalFeedStore = {
+      queryFeed: async () => [signalA, signalB],
+      queryFreshness: async (provider) => {
+        if (provider === "prov-a") {
+          return {
+            provider: "prov-a",
+            category: "earthquake",
+            lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+          };
+        }
+        return null;
+      },
+    };
+    const testApp = createApp({ signals: store });
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    const providers = body.freshness.map(
+      (f: { provider: string }) => f.provider,
+    );
+
+    expect(providers).toEqual(["prov-a"]);
   });
 });

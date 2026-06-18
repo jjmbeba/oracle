@@ -4,6 +4,10 @@ import type { Auth } from "./auth";
 import type { AppBindings } from "./auth-middleware";
 import { regionsRoutes } from "./regions";
 import {
+  createSignalFeedRoutes,
+  type SignalFeedStore,
+} from "./signals";
+import {
   createWatchedRegionsRoutes,
   type WatchedRegionStore,
 } from "./watched-regions";
@@ -15,6 +19,7 @@ export type WatchedRegionsOptions = {
 
 export type AppOptions = {
   auth?: Pick<Auth, "handler">;
+  signals?: SignalFeedStore;
   watchedRegions?: WatchedRegionsOptions;
 };
 
@@ -34,6 +39,10 @@ export function createApp(options: AppOptions = {}) {
   }
 
   app.route("/regions", regionsRoutes);
+
+  if (options.signals) {
+    app.route("/signals", createSignalFeedRoutes({ store: options.signals }));
+  }
 
   if (options.watchedRegions) {
     const watchedRegionsRoutes = createWatchedRegionsRoutes(options.watchedRegions);
