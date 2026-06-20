@@ -103,4 +103,24 @@ describe("useSignalLayerManager", () => {
     expect(mapMock.removeLayer).toHaveBeenCalledWith("oracle-signals-circle-earthquake");
     expect(mapMock.removeSource).toHaveBeenCalledWith("oracle-signals-earthquake");
   });
+
+  it("prunes layers for categories not in the keep list", () => {
+    const mapMock = makeMap();
+    const map = ref(mapMock as never);
+    const isLoaded = ref(true);
+    const manager = useSignalLayerManager(map, isLoaded);
+
+    manager.updateCategoryLayer("earthquake", [pointSignal]);
+    manager.updateCategoryLayer("weather", [pointSignal]);
+
+    mapMock.removeLayer.mockClear();
+    mapMock.removeSource.mockClear();
+
+    manager.pruneExcept(["earthquake"]);
+
+    expect(mapMock.removeLayer).toHaveBeenCalledWith("oracle-signals-halo-weather");
+    expect(mapMock.removeLayer).toHaveBeenCalledWith("oracle-signals-circle-weather");
+    expect(mapMock.removeSource).toHaveBeenCalledWith("oracle-signals-weather");
+    expect(mapMock.removeLayer).not.toHaveBeenCalledWith("oracle-signals-halo-earthquake");
+  });
 });

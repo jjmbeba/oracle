@@ -54,14 +54,20 @@ const safeCentroid = (
   lats: (number | null)[],
   lngs: (number | null)[],
 ): { latitude: number | null; longitude: number | null } => {
-  const validLats = lats.filter((v): v is number => v !== null);
-  const validLngs = lngs.filter((v): v is number => v !== null);
-  if (validLats.length === 0 || validLngs.length === 0) {
+  const pairs = lats
+    .map((latitude, i) => ({ latitude, longitude: lngs[i] ?? null }))
+    .filter(
+      (p): p is { latitude: number; longitude: number } =>
+        p.latitude !== null && p.longitude !== null,
+    );
+
+  if (pairs.length === 0) {
     return { latitude: null, longitude: null };
   }
+
   return {
-    latitude: Math.round((validLats.reduce((a, b) => a + b, 0) / validLats.length) * 100) / 100,
-    longitude: Math.round((validLngs.reduce((a, b) => a + b, 0) / validLngs.length) * 100) / 100,
+    latitude: Math.round((pairs.reduce((a, p) => a + p.latitude, 0) / pairs.length) * 100) / 100,
+    longitude: Math.round((pairs.reduce((a, p) => a + p.longitude, 0) / pairs.length) * 100) / 100,
   };
 };
 

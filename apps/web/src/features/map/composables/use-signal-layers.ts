@@ -1,7 +1,7 @@
 import type { Ref } from "vue";
 import type { GeoJSONSource, Map } from "maplibre-gl";
 import type { SignalFeedItem } from "../../signals/api";
-import { signalFeedToGeoJson, SEVERITY_STYLES } from "../../signals/types";
+import { signalFeedToGeoJson, SEVERITY_STYLES, SIGNAL_CATEGORIES } from "../../signals/types";
 import {
   SIGNAL_LAYER_PREFIX,
   SIGNAL_HALO_LAYER_PREFIX,
@@ -44,6 +44,7 @@ export type SignalLayerManager = {
     signals: readonly SignalFeedItem[],
   ) => void;
   readonly removeCategoryLayer: (category: SignalCategory) => void;
+  readonly pruneExcept: (keep: readonly SignalCategory[]) => void;
   readonly clearAll: () => void;
 };
 
@@ -124,6 +125,17 @@ export function useSignalLayerManager(
     if (m.getSource(sid)) m.removeSource(sid);
   }
 
+  function pruneExcept(keep: readonly SignalCategory[]): void {
+    const m = map.value;
+    if (!m) return;
+    const keepSet = new Set(keep);
+    for (const category of SIGNAL_CATEGORIES) {
+      if (!keepSet.has(category)) {
+        removeCategoryLayer(category);
+      }
+    }
+  }
+
   function clearAll(): void {
     const m = map.value;
     if (!m) return;
@@ -146,5 +158,5 @@ export function useSignalLayerManager(
     }
   }
 
-  return { updateCategoryLayer, removeCategoryLayer, clearAll };
+  return { updateCategoryLayer, removeCategoryLayer, pruneExcept, clearAll };
 }

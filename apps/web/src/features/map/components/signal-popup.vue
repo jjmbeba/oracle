@@ -1,5 +1,8 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+import { safeExternalUrl } from "../../../lib/safe-url";
+
+const props = defineProps<{
   title: string;
   severityColor: string;
   severityLabel: string;
@@ -8,6 +11,8 @@ defineProps<{
   effectiveAtLabel: string;
   sourceLink: { url: string; label?: string } | null;
 }>();
+
+const safeHref = computed(() => safeExternalUrl(props.sourceLink?.url));
 </script>
 
 <template>
@@ -19,7 +24,13 @@ defineProps<{
       <span>{{ provider }}</span>
       <span>{{ effectiveAtLabel }}</span>
     </div>
-    <a v-if="sourceLink" class="popup-source" :href="sourceLink.url" target="_blank" rel="noopener">
+    <a
+      v-if="sourceLink && safeHref"
+      class="popup-source"
+      :href="safeHref"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       {{ sourceLink.label ?? "Open source" }} ↗
     </a>
   </div>

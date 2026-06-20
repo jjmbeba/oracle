@@ -123,4 +123,16 @@ describe("pointToBounds", () => {
     expect(south).toBe(19.5);
     expect(north).toBe(20.5);
   });
+
+  it("clamps latitude to [-90, 90] near the north pole", () => {
+    const [[, south], [, north]] = pointToBounds(0, 89.8);
+    expect(south).toBeLessThanOrEqual(90);
+    expect(north).toBeLessThanOrEqual(90);
+  });
+
+  it("clamps latitude to [-90, 90] near the south pole", () => {
+    const [[, south], [, north]] = pointToBounds(0, -89.8);
+    expect(south).toBeGreaterThanOrEqual(-90);
+    expect(north).toBeGreaterThanOrEqual(-90);
+  });
 });

@@ -136,9 +136,18 @@ export function useSignalPulse(
   };
 
   watch(
-    [isLoaded, reducedMotion, () => activeHaloCategories().length],
+    [
+      isLoaded,
+      reducedMotion,
+      () =>
+        activeHaloCategories()
+          .map((c) => signalHaloLayerId(c))
+          .sort()
+          .join("|"),
+    ],
     () => {
-      if (!isLoaded.value || activeHaloCategories().length === 0) {
+      const halos = activeHaloCategories();
+      if (!isLoaded.value || halos.length === 0) {
         stop();
         return;
       }

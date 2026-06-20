@@ -30,9 +30,11 @@ export type LngLatBounds = readonly [readonly [number, number], readonly [number
 
 export function pointToBounds(lng: number, lat: number): LngLatBounds {
   const deg = 0.5;
+  const south = Math.max(-90, lat - deg);
+  const north = Math.min(90, lat + deg);
   return [
-    [lng - deg, lat - deg],
-    [lng + deg, lat + deg],
+    [lng - deg, south],
+    [lng + deg, north],
   ];
 }
 

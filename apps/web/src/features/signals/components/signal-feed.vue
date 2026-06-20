@@ -18,6 +18,10 @@ const { results, allSignals, isLoadingAny } = useSignalFeedQueries(
   toRef(props, "activeCategories"),
 );
 
+const isErrorAny = computed(
+  () => !isLoadingAny.value && results.value.some((r) => r.data === undefined),
+);
+
 const sortedSignals = computed<readonly SignalFeedItem[]>(() =>
   [...allSignals.value].sort((a, b) => {
     const sa = SEVERITY_ORDER[a.severity];
@@ -42,8 +46,14 @@ const freshnessLabel = computed(() => {
   return formatFeedFreshness(new Date(ts).toISOString());
 });
 
+function isPointSignal(signal: SignalFeedItem): signal is SignalFeedItem & {
+  readonly scope: { readonly kind: "point"; readonly coordinates: readonly [number, number] };
+} {
+  return signal.scope.kind === "point";
+}
+
 function handleItemClick(signal: SignalFeedItem) {
-  if (signal.scope.kind !== "point") return;
+  if (!isPointSignal(signal)) return;
   const [lng, lat] = signal.scope.coordinates;
   emit("signalClick", lng, lat);
 }
@@ -58,32 +68,53 @@ function handleItemClick(signal: SignalFeedItem) {
 
     <div v-if="isLoadingAny" class="feed-state">Loading signals...</div>
 
+    <div v-else-if="isErrorAny" class="feed-state feed-state-error">Signal feed unavailable</div>
+
     <div v-else-if="sortedSignals.length === 0" class="feed-state">No active signals</div>
 
     <div v-else class="feed-items" role="list">
-      <button
+      <template
         v-for="(signal, idx) in sortedSignals"
         :key="`${signal.provider}-${signal.effectiveAt}-${idx}`"
-        class="feed-item"
-        role="listitem"
-        type="button"
-        :title="signal.title"
-        @click="handleItemClick(signal)"
       >
-        <span
-          class="item-badge"
-          :style="{ backgroundColor: SEVERITY_STYLES[signal.severity].color }"
+        <button
+          v-if="isPointSignal(signal)"
+          class="feed-item feed-item-clickable"
+          role="listitem"
+          type="button"
+          :title="signal.title"
+          @click="handleItemClick(signal)"
         >
-          {{ SEVERITY_STYLES[signal.severity].label }}
-        </span>
-        <span class="item-title">{{ signal.title }}</span>
-        <span class="item-meta">
-          <span v-if="signal.sourceLink?.label" class="item-source">{{
-            signal.sourceLink.label
-          }}</span>
-          <span class="item-time">{{ formatShortRelativeTime(signal.effectiveAt) }}</span>
-        </span>
-      </button>
+          <span
+            class="item-badge"
+            :style="{ backgroundColor: SEVERITY_STYLES[signal.severity].color }"
+          >
+            {{ SEVERITY_STYLES[signal.severity].label }}
+          </span>
+          <span class="item-title">{{ signal.title }}</span>
+          <span class="item-meta">
+            <span v-if="signal.sourceLink?.label" class="item-source">{{
+              signal.sourceLink.label
+            }}</span>
+            <span class="item-time">{{ formatShortRelativeTime(signal.effectiveAt) }}</span>
+          </span>
+        </button>
+        <div v-else class="feed-item feed-item-static" role="listitem" :title="signal.title">
+          <span
+            class="item-badge"
+            :style="{ backgroundColor: SEVERITY_STYLES[signal.severity].color }"
+          >
+            {{ SEVERITY_STYLES[signal.severity].label }}
+          </span>
+          <span class="item-title">{{ signal.title }}</span>
+          <span class="item-meta">
+            <span v-if="signal.sourceLink?.label" class="item-source">{{
+              signal.sourceLink.label
+            }}</span>
+            <span class="item-time">{{ formatShortRelativeTime(signal.effectiveAt) }}</span>
+          </span>
+        </div>
+      </template>
     </div>
   </section>
 </template>
@@ -126,6 +157,10 @@ function handleItemClick(signal: SignalFeedItem) {
 .feed-state {
   font-size: 11px;
   color: $text-muted;
+}
+
+.feed-state-error {
+  color: $text-alert;
 }
 
 .feed-items {
@@ -172,16 +207,24 @@ function handleItemClick(signal: SignalFeedItem) {
   border: 1px solid $border-default;
   background: $bg-button;
   color: $text-primary;
-  cursor: pointer;
   font: inherit;
   font-size: 11px;
   line-height: 1.3;
   text-align: left;
   transition: border-color 0.15s;
+}
+
+.feed-item-clickable {
+  cursor: pointer;
 
   &:hover {
     border-color: $border-hover;
   }
+}
+
+.feed-item-static {
+  cursor: default;
+  opacity: 0.7;
 }
 
 .item-badge {

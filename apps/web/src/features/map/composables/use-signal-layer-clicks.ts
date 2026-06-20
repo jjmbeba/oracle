@@ -11,15 +11,15 @@ export function useSignalLayerClicks(
   map: Ref<Map | null>,
   isLoaded: Ref<boolean>,
   categories: () => readonly SignalCategory[],
-  onClick: (lng: number, lat: number) => void,
+  onClick: (feature: SignalGeoJsonFeature) => void,
 ): SignalLayerClicks {
   const registered = new Set<SignalCategory>();
+  let boundMap: Map | null = null;
 
   const clickHandler = (e: MapMouseEvent & { features?: MapGeoJSONFeature[] }): void => {
     const feature = e.features?.[0] as SignalGeoJsonFeature | undefined;
     if (!feature) return;
-    const [lng, lat] = feature.geometry.coordinates;
-    onClick(lng, lat);
+    onClick(feature);
   };
 
   function register(category: SignalCategory): void {
@@ -36,10 +36,22 @@ export function useSignalLayerClicks(
     registered.delete(category);
   }
 
+  function unregisterAll(): void {
+    if (!boundMap) return;
+    for (const cat of registered) {
+      boundMap.off("click", signalLayerId(cat), clickHandler);
+    }
+    registered.clear();
+  }
+
   watch(
-    [isLoaded, () => categories()],
-    ([loaded, list]) => {
-      if (!loaded) return;
+    [map, isLoaded, () => categories()],
+    ([currentMap, loaded, list]) => {
+      if (boundMap && boundMap !== currentMap) {
+        unregisterAll();
+      }
+      boundMap = currentMap;
+      if (!loaded || !currentMap) return;
       const next = new Set(list);
 
       for (const cat of registered) {
@@ -53,9 +65,8 @@ export function useSignalLayerClicks(
   );
 
   function dispose(): void {
-    for (const cat of registered) {
-      unregister(cat);
-    }
+    unregisterAll();
+    boundMap = null;
   }
 
   onBeforeUnmount(dispose);

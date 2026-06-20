@@ -11,6 +11,7 @@ import { formatRelativeTime } from "../../signals/format";
 import { SEVERITY_STYLES } from "../../signals/types";
 import type { SignalCategory, SignalGeoJsonFeature } from "../../signals/types";
 import type { LngLatBounds } from "../../regions/geo-utils";
+import { safeExternalUrl } from "../../../lib/safe-url";
 
 const containerRef = useTemplateRef<HTMLDivElement>("map-container");
 
@@ -33,9 +34,10 @@ useSignalLayerClicks(
   map,
   isLoaded,
   () => activeCategoriesRef.value,
-  (lng, lat) => {
+  (feature) => {
+    const [lng, lat] = feature.geometry.coordinates;
     emit("signalClick", lng, lat);
-    showPopup(lng, lat);
+    showPopup(feature);
   },
 );
 
@@ -45,6 +47,7 @@ watch(
   [isLoaded, allSignals, () => props.activeCategories],
   ([loaded, signals, categories]) => {
     if (!loaded) return;
+    layerManager.pruneExcept(categories);
     for (const category of categories) {
       const categorySignals = signals.filter((s) => s.category === category);
       layerManager.updateCategoryLayer(category, categorySignals);
@@ -55,20 +58,11 @@ watch(
 
 const currentPopup = ref<maplibregl.Popup | null>(null);
 
-function showPopup(lng: number, lat: number): void {
+function showPopup(feature: SignalGeoJsonFeature): void {
   const m = map.value;
   if (!m) return;
 
-  const layers = (m.getStyle().layers ?? [])
-    .filter((l) => l.id.startsWith("oracle-signals-circle-"))
-    .map((l) => l.id);
-
-  if (layers.length === 0) return;
-
-  const rendered = m.queryRenderedFeatures([lng, lat], { layers });
-  const feature = rendered[0] as unknown as SignalGeoJsonFeature | undefined;
-  if (!feature) return;
-
+  const [lng, lat] = feature.geometry.coordinates;
   const severityStyle = SEVERITY_STYLES[feature.properties.severity];
 
   currentPopup.value?.remove();
@@ -81,7 +75,7 @@ function showPopup(lng: number, lat: number): void {
     effectiveAtLabel: formatRelativeTime(feature.properties.effectiveAt),
     sourceLink: feature.properties.sourceLinkUrl
       ? {
-          url: feature.properties.sourceLinkUrl,
+          url: safeExternalUrl(feature.properties.sourceLinkUrl) ?? "",
           label: feature.properties.sourceLinkLabel,
         }
       : null,
@@ -89,16 +83,17 @@ function showPopup(lng: number, lat: number): void {
 }
 
 watch(
-  () => props.flyTarget,
-  (target) => {
+  [isLoaded, () => props.flyTarget],
+  ([loaded, target]) => {
     const m = map.value;
-    if (!m || !target) return;
+    if (!loaded || !m || !target) return;
     const bounds: [[number, number], [number, number]] = [
       [target.bounds[0][0], target.bounds[0][1]],
       [target.bounds[1][0], target.bounds[1][1]],
     ];
     m.fitBounds(bounds, { padding: 40, duration: 1200 });
   },
+  { immediate: true },
 );
 
 onMounted(() => {

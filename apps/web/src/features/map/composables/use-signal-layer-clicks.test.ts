@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { nextTick, ref } from "vue";
+import { nextTick, ref, type Ref } from "vue";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { useSignalLayerClicks } from "./use-signal-layer-clicks";
-import type { SignalCategory } from "../../signals/types";
+import type { SignalCategory, SignalGeoJsonFeature } from "../../signals/types";
 
 type Listener = (...args: unknown[]) => void;
+
+type MapMock = ReturnType<typeof makeMap>;
+type MapRef = Ref<MapLibreMap | null>;
 
 const makeMap = () => {
   const layers = new Map<string, Set<Listener>>();
@@ -24,10 +28,12 @@ const makeMap = () => {
   };
 };
 
+const toMapRef = (mock: MapMock): MapRef => ref(mock) as unknown as MapRef;
+
 describe("useSignalLayerClicks", () => {
   it("registers a click handler for each active category", () => {
     const mapMock = makeMap();
-    const map = ref(mapMock as never);
+    const map = toMapRef(mapMock);
     const isLoaded = ref(true);
     const categories = ref<readonly SignalCategory[]>(["earthquake", "weather"]);
 
@@ -45,7 +51,7 @@ describe("useSignalLayerClicks", () => {
 
   it("unregisters removed categories and registers new ones on diff", async () => {
     const mapMock = makeMap();
-    const map = ref(mapMock as never);
+    const map = toMapRef(mapMock);
     const isLoaded = ref(true);
     const categories = ref<readonly SignalCategory[]>(["earthquake"]);
 
@@ -67,7 +73,7 @@ describe("useSignalLayerClicks", () => {
 
   it("does not register anything before the map is loaded", () => {
     const mapMock = makeMap();
-    const map = ref(mapMock as never);
+    const map = toMapRef(mapMock);
     const isLoaded = ref(false);
     const categories = ref<readonly SignalCategory[]>(["earthquake"]);
 
@@ -81,9 +87,9 @@ describe("useSignalLayerClicks", () => {
     expect(mapMock.on).not.toHaveBeenCalled();
   });
 
-  it("forwards the feature's coordinates to the onClick callback", () => {
+  it("forwards the clicked feature to the onClick callback", () => {
     const mapMock = makeMap();
-    const map = ref(mapMock as never);
+    const map = toMapRef(mapMock);
     const isLoaded = ref(true);
     const categories = ref<readonly SignalCategory[]>(["earthquake"]);
     const onClick = vi.fn();
@@ -93,24 +99,48 @@ describe("useSignalLayerClicks", () => {
     const handler = [...mapMock.handlers("oracle-signals-circle-earthquake")][0] as (
       e: unknown,
     ) => void;
-    handler({
-      features: [
-        {
-          type: "Feature",
-          id: "x",
-          geometry: { type: "Point", coordinates: [12.34, 56.78] },
-          properties: {
-            provider: "usgs",
-            category: "earthquake",
-            title: "x",
-            severity: "minor",
-            confidence: "low",
-            effectiveAt: "2026-01-01T00:00:00.000Z",
-          },
-        },
-      ],
-    });
+    const feature: SignalGeoJsonFeature = {
+      type: "Feature",
+      id: "x",
+      geometry: { type: "Point", coordinates: [12.34, 56.78] },
+      properties: {
+        provider: "usgs",
+        category: "earthquake",
+        title: "x",
+        severity: "minor",
+        confidence: "low",
+        effectiveAt: "2026-01-01T00:00:00.000Z",
+      },
+    };
+    handler({ features: [feature] });
 
-    expect(onClick).toHaveBeenCalledWith(12.34, 56.78);
+    expect(onClick).toHaveBeenCalledWith(feature);
+  });
+
+  it("unregisters handlers from the previous map when the map instance changes", async () => {
+    const firstMap = makeMap();
+    const secondMap = makeMap();
+    const map = toMapRef(firstMap);
+    const isLoaded = ref(true);
+    const categories = ref<readonly SignalCategory[]>(["earthquake"]);
+
+    useSignalLayerClicks(
+      map,
+      isLoaded,
+      () => categories.value,
+      () => {},
+    );
+
+    expect(firstMap.handlers("oracle-signals-circle-earthquake").size).toBe(1);
+
+    map.value = secondMap as unknown as MapLibreMap;
+    await nextTick();
+
+    expect(firstMap.off).toHaveBeenCalledWith(
+      "click",
+      "oracle-signals-circle-earthquake",
+      expect.any(Function),
+    );
+    expect(secondMap.handlers("oracle-signals-circle-earthquake").size).toBe(1);
   });
 });
