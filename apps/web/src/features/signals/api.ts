@@ -123,3 +123,5 @@ export async function fetchSignalFeed(
 
   return body;
 }
+
+export { isSignalFeedItem, isFreshnessEntry, isSignalFeedResponse };

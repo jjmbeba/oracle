@@ -4,12 +4,14 @@ export {
   countryById,
   countryGroups,
   getCountryById,
+  getRegionMemberCountryIds,
   getRegionById,
   isRegionId,
   regionById,
   regions,
 } from "./catalog";
 export { getRegionDossier, aggregateMemberFacts } from "./dossier";
+export { matchSignalsToRegion } from "./signal-matching";
 export { regionIdSchema } from "./schemas";
 export { searchRegions, toRegionSearchResult, type RegionSearchResult } from "./search";
 export type {
@@ -17,6 +19,7 @@ export type {
   ContinentDossier,
   ContinentId,
   Country,
+  CountryBounds,
   CountryDossier,
   CountryGroup,
   CountryGroupId,

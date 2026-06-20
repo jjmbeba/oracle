@@ -1,11 +1,14 @@
 import {
   getRegionById,
   getRegionDossier,
+  getRegionMemberCountryIds,
   isRegionId,
+  matchSignalsToRegion,
   searchRegions,
   toRegionSearchResult,
 } from "@oracle/domain";
 import { Hono } from "hono";
+import { SIGNAL_WINDOW_MS, type SignalFeedStore } from "./signals";
 
 const regionNotFound = () =>
   Response.json(
@@ -59,3 +62,62 @@ regionsRoutes.get("/:id/dossier", (context) => {
 
   return context.json({ dossier });
 });
+
+type ActiveSignalsRoutesOptions = {
+  store: SignalFeedStore;
+};
+
+export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOptions) {
+  const router = new Hono();
+  const { store } = options;
+
+  router.get("/:id/active-signals", async (context) => {
+    const id = context.req.param("id");
+
+    if (!isRegionId(id)) {
+      return regionNotFound();
+    }
+
+    const region = getRegionById(id);
+
+    if (!region) {
+      return regionNotFound();
+    }
+
+    const memberCountryIds = getRegionMemberCountryIds(id);
+    const since = new Date(Date.now() - SIGNAL_WINDOW_MS);
+
+    const allSignals = await store.queryAllInWindow(since);
+    const signals = matchSignalsToRegion(allSignals, memberCountryIds);
+
+    const distinctProviders = [...new Set(signals.map((s) => s.provider))];
+
+    const freshnessEntries = await Promise.all(
+      distinctProviders.map((provider) => {
+        const category = signals.find((s) => s.provider === provider)?.category;
+        if (!category) return Promise.resolve(null);
+        return store.queryFreshness(provider, category);
+      }),
+    );
+
+    const freshness = freshnessEntries.flatMap((entry) =>
+      entry
+        ? [
+            {
+              provider: entry.provider,
+              category: entry.category,
+              lastSuccessfulPollAt: entry.lastSuccessfulPollAt.toISOString(),
+            },
+          ]
+        : [],
+    );
+
+    return context.json({
+      region: toRegionSearchResult(region),
+      signals,
+      freshness,
+    });
+  });
+
+  return router;
+}

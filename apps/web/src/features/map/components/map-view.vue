@@ -4,7 +4,9 @@ import maplibregl from "maplibre-gl";
 import { useMapLibre } from "../composables/use-map-libre";
 import { useSignalLayerManager } from "../composables/use-signal-layers";
 import { useSignalLayerClicks } from "../composables/use-signal-layer-clicks";
+import { useSignalLayerTooltips } from "../composables/use-signal-tooltip-layer";
 import { renderSignalPopup } from "../composables/use-signal-popup";
+import { renderSignalTooltip } from "../composables/use-signal-tooltip";
 import { useSignalPulse } from "../composables/use-signal-pulse";
 import { useSignalFeedQueries } from "../../signals/queries";
 import { formatRelativeTime } from "../../signals/format";
@@ -37,9 +39,19 @@ useSignalLayerClicks(
   (feature) => {
     const [lng, lat] = feature.geometry.coordinates;
     emit("signalClick", lng, lat);
+    hideTooltip();
     showPopup(feature);
   },
 );
+
+useSignalLayerTooltips(map, isLoaded, () => activeCategoriesRef.value, {
+  onShow: (feature) => {
+    showTooltip(feature);
+  },
+  onHide: () => {
+    hideTooltip();
+  },
+});
 
 useSignalPulse(map, isLoaded, () => activeCategoriesRef.value);
 
@@ -57,6 +69,7 @@ watch(
 );
 
 const currentPopup = ref<maplibregl.Popup | null>(null);
+const currentTooltip = ref<maplibregl.Popup | null>(null);
 
 function showPopup(feature: SignalGeoJsonFeature): void {
   const m = map.value;
@@ -82,6 +95,29 @@ function showPopup(feature: SignalGeoJsonFeature): void {
   });
 }
 
+function showTooltip(feature: SignalGeoJsonFeature): void {
+  const m = map.value;
+  if (!m) return;
+  if (currentPopup.value) return;
+
+  const [lng, lat] = feature.geometry.coordinates;
+  const severityStyle = SEVERITY_STYLES[feature.properties.severity];
+
+  currentTooltip.value?.remove();
+  currentTooltip.value = renderSignalTooltip(m, [lng, lat], {
+    title: feature.properties.title,
+    severityColor: severityStyle.color,
+    severityLabel: severityStyle.label,
+    provider: feature.properties.provider,
+    effectiveAtLabel: formatRelativeTime(feature.properties.effectiveAt),
+  });
+}
+
+function hideTooltip(): void {
+  currentTooltip.value?.remove();
+  currentTooltip.value = null;
+}
+
 watch(
   [isLoaded, () => props.flyTarget],
   ([loaded, target]) => {
@@ -103,6 +139,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   currentPopup.value?.remove();
+  hideTooltip();
   layerManager.clearAll();
   destroy();
 });
@@ -134,6 +171,19 @@ onUnmounted(() => {
 .maplibregl-popup-close-button:hover {
   color: #c0c0c0 !important;
   background: none !important;
+}
+
+.oracle-signal-tooltip .maplibregl-popup-content {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 0 !important;
+  padding: 8px 10px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+  pointer-events: none;
+}
+
+.oracle-signal-tooltip .maplibregl-popup-tip {
+  display: none !important;
 }
 </style>
 

@@ -191,6 +191,95 @@ describe("signal repo", () => {
     });
   });
 
+  describe("querySignals with includeGlobalScope", () => {
+    itIfDb("returns region-scoped matches and global signals together", async () => {
+      const regionSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-region-${crypto.randomUUID()}`,
+        title: "Region Signal",
+        scope: { kind: "region", regionId: "country:ke" },
+      });
+      const globalSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-global-${crypto.randomUUID()}`,
+        title: "Global Signal",
+        scope: { kind: "global" },
+      });
+      const otherRegionSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-other-${crypto.randomUUID()}`,
+        title: "Other Region Signal",
+        scope: { kind: "region", regionId: "country:ug" },
+      });
+      const pointSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-point-${crypto.randomUUID()}`,
+        title: "Point Signal",
+        scope: { kind: "point", coordinates: [36.82, -1.29] as [number, number] },
+      });
+      await upsertSignal(db, regionSignal);
+      await upsertSignal(db, globalSignal);
+      await upsertSignal(db, otherRegionSignal);
+      await upsertSignal(db, pointSignal);
+
+      const results = await querySignals(db, {
+        since: new Date("2025-01-01"),
+        regionIds: ["country:ke"],
+        includeGlobalScope: true,
+      });
+
+      const titles = results.map((s) => s.title);
+      expect(titles).toContain("Region Signal");
+      expect(titles).toContain("Global Signal");
+      expect(titles).not.toContain("Other Region Signal");
+      expect(titles).not.toContain("Point Signal");
+    });
+
+    itIfDb("returns only global signals when no regionIds given", async () => {
+      const globalSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-only-${crypto.randomUUID()}`,
+        title: "Lonely Global",
+        scope: { kind: "global" },
+      });
+      const regionSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-r-${crypto.randomUUID()}`,
+        title: "Lonely Region",
+        scope: { kind: "region", regionId: "country:ke" },
+      });
+      await upsertSignal(db, globalSignal);
+      await upsertSignal(db, regionSignal);
+
+      const results = await querySignals(db, {
+        since: new Date("2025-01-01"),
+        includeGlobalScope: true,
+      });
+
+      const titles = results.map((s) => s.title);
+      expect(titles).toContain("Lonely Global");
+      expect(titles).not.toContain("Lonely Region");
+    });
+
+    itIfDb("excludes global signals when includeGlobalScope is not set", async () => {
+      const globalSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-no-${crypto.randomUUID()}`,
+        title: "No-Include Global",
+        scope: { kind: "global" },
+      });
+      const regionSignal = makeSignal({
+        dedupeKey: `signal:earthquake:test-provider:provider-native:glob-nr-${crypto.randomUUID()}`,
+        title: "No-Include Region",
+        scope: { kind: "region", regionId: "country:ke" },
+      });
+      await upsertSignal(db, globalSignal);
+      await upsertSignal(db, regionSignal);
+
+      const results = await querySignals(db, {
+        since: new Date("2025-01-01"),
+        regionIds: ["country:ke"],
+      });
+
+      const titles = results.map((s) => s.title);
+      expect(titles).toContain("No-Include Region");
+      expect(titles).not.toContain("No-Include Global");
+    });
+  });
+
   describe("querySignals", () => {
     itIfDb("returns signals within the time window", async () => {
       const recentSignal = makeSignal({

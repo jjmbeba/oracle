@@ -1,22 +1,24 @@
 import type { ProviderFreshness, schema } from "@oracle/db";
-import { queryProviderFreshness, querySignalFeed } from "@oracle/db";
+import { queryProviderFreshness, querySignalFeed, querySignals } from "@oracle/db";
 import { signalCategories, type NormalizedSignal, type SignalCategory } from "@oracle/domain";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Hono } from "hono";
 
 type Database = PostgresJsDatabase<typeof schema>;
 
-const SIGNAL_WINDOW_MS = 72 * 60 * 60 * 1000;
+export const SIGNAL_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export type SignalFeedStore = {
   queryFeed(category: SignalCategory, since: Date): Promise<NormalizedSignal[]>;
   queryFreshness(provider: string, category: SignalCategory): Promise<ProviderFreshness | null>;
+  queryAllInWindow(since: Date): Promise<NormalizedSignal[]>;
 };
 
 export function createDrizzleSignalFeedStore(db: Database): SignalFeedStore {
   return {
     queryFeed: (category, since) => querySignalFeed(db, { category, since }),
     queryFreshness: (provider, category) => queryProviderFreshness(db, provider, category),
+    queryAllInWindow: (since) => querySignals(db, { since }),
   };
 }
 

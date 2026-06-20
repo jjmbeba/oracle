@@ -1,10 +1,12 @@
 import { countryFactRecords } from "./source-country-facts";
 import { countrySourceRecords } from "./source-countries";
+import { countryBoundsRecords } from "./source-country-bounds";
 import { continentSourceRecords, countryGroupSourceRecords } from "./source-regions";
 import type {
   Continent,
   ContinentId,
   Country,
+  CountryBounds,
   CountryGroup,
   CountryGroupId,
   CountryId,
@@ -30,6 +32,12 @@ for (const [
   }
 }
 
+const boundsByAlpha2 = new Map<string, CountryBounds>();
+
+for (const [alpha2, west, south, east, north] of countryBoundsRecords) {
+  boundsByAlpha2.set(alpha2, { west, south, east, north });
+}
+
 const memberCountryIdsFor = (
   sourceIndex: 2 | 3,
   regionId: ContinentId | CountryGroupId,
@@ -48,6 +56,7 @@ export const countries: readonly Country[] = countrySourceRecords.map(([alpha2, 
     displayName,
     latitude: centroid?.latitude ?? null,
     longitude: centroid?.longitude ?? null,
+    bounds: boundsByAlpha2.get(alpha2) ?? null,
   };
 });
 
@@ -84,3 +93,15 @@ export const getRegionById = (id: RegionId): Region | undefined => regionById.ge
 export const getCountryById = (id: CountryId): Country | undefined => countryById.get(id);
 
 export const isRegionId = (value: string): value is RegionId => regionById.has(value as RegionId);
+
+export const getRegionMemberCountryIds = (id: RegionId): readonly CountryId[] => {
+  const region = regionById.get(id);
+
+  if (!region) return [];
+
+  if (region.kind === "country") {
+    return [region.id];
+  }
+
+  return region.memberCountryIds;
+};

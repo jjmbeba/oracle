@@ -242,3 +242,48 @@ export async function fetchRegionDossier(
 
   return body.dossier;
 }
+
+// ── Active signals ──
+
+import {
+  isFreshnessEntry,
+  isSignalFeedItem,
+  type FreshnessEntry,
+  type SignalFeedItem,
+} from "../signals/api";
+
+export type RegionActiveSignals = {
+  readonly region: RegionSearchResult;
+  readonly signals: readonly SignalFeedItem[];
+  readonly freshness: readonly FreshnessEntry[];
+};
+
+function isActiveSignalsResponse(value: unknown): value is RegionActiveSignals {
+  return (
+    isRecord(value) &&
+    isRegionSearchResult(value.region) &&
+    Array.isArray(value.signals) &&
+    value.signals.every(isSignalFeedItem) &&
+    Array.isArray(value.freshness) &&
+    value.freshness.every(isFreshnessEntry)
+  );
+}
+
+export async function fetchRegionActiveSignals(
+  regionId: string,
+  fetcher: Fetcher = fetch,
+): Promise<RegionActiveSignals> {
+  const response = await fetcher(`/api/regions/${encodeURIComponent(regionId)}/active-signals`);
+
+  if (!response.ok) {
+    throw new Error(`Region active signals request failed with status ${response.status}`);
+  }
+
+  const body: unknown = await response.json();
+
+  if (!isActiveSignalsResponse(body)) {
+    throw new Error("Region active signals returned an invalid response");
+  }
+
+  return body;
+}

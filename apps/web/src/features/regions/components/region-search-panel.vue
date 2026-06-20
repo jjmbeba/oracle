@@ -160,6 +160,7 @@ function getWatchedKind(region: WatchedRegion): string {
 
 <style scoped lang="scss">
 @use "../../../styles/variables" as *;
+@use "../../../styles/scrollbar" as *;
 
 .search-panel {
   position: absolute;
@@ -270,35 +271,7 @@ input:focus-visible {
   min-height: 0;
   overflow-y: auto;
   padding-right: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.15s;
-
-  &:hover {
-    scrollbar-color: $border-hover transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 3px;
-    transition: background 0.15s;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background: $border-hover;
-
-    &:hover {
-      background: #777;
-    }
-  }
+  @include thin-hover-scrollbar;
 }
 
 .result-item {

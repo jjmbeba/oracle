@@ -13,7 +13,9 @@ export type OpenweatherIngestionJobOptions = IngestionJobDeps & {
   env?: NodeJS.ProcessEnv;
 };
 
-export function createOpenweatherIngestionJob(options: OpenweatherIngestionJobOptions): ScheduledJob {
+export function createOpenweatherIngestionJob(
+  options: OpenweatherIngestionJobOptions,
+): ScheduledJob {
   const env = options.env ?? process.env;
   const intervalMs = readOpenweatherPollIntervalMs(env);
   const apiKey = readOpenweatherApiKey(env);
