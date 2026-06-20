@@ -84,7 +84,9 @@ describe("deriveOpenweatherTitle", () => {
 
   it("derives title from tags when event is blank", () => {
     expect(deriveOpenweatherTitle("", ["Wind"], [])).toBe("Wind Alert");
-    expect(deriveOpenweatherTitle("", ["Thunderstorm", "Wind"], [])).toBe("Thunderstorm, Wind Alert");
+    expect(deriveOpenweatherTitle("", ["Thunderstorm", "Wind"], [])).toBe(
+      "Thunderstorm, Wind Alert",
+    );
   });
 
   it("prefers tags over description when event is blank", () => {
@@ -96,7 +98,9 @@ describe("deriveOpenweatherTitle", () => {
     const desc = [
       { locale: "en", description: "Severe thunderstorm warning in effect until midnight" },
     ];
-    expect(deriveOpenweatherTitle("", [], desc)).toBe("Severe thunderstorm warning in effect until midnight");
+    expect(deriveOpenweatherTitle("", [], desc)).toBe(
+      "Severe thunderstorm warning in effect until midnight",
+    );
   });
 
   it("uses first description when no English available", () => {
@@ -105,7 +109,8 @@ describe("deriveOpenweatherTitle", () => {
   });
 
   it("truncates long description to 80 chars", () => {
-    const longDesc = "This is a very long weather warning description that should definitely be truncated because it exceeds our eighty character limit for display titles in the signal feed.";
+    const longDesc =
+      "This is a very long weather warning description that should definitely be truncated because it exceeds our eighty character limit for display titles in the signal feed.";
     const desc = [{ locale: "en", description: longDesc }];
     expect(deriveOpenweatherTitle("", [], desc)).toBe(longDesc.slice(0, 80).trim());
   });

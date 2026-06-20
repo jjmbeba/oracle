@@ -1,10 +1,5 @@
 import { watchedRegion } from "@oracle/db";
-import {
-  getRegionById,
-  isRegionId,
-  toRegionSearchResult,
-  type RegionId,
-} from "@oracle/domain";
+import { getRegionById, isRegionId, toRegionSearchResult, type RegionId } from "@oracle/domain";
 import { and, count, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Hono } from "hono";
@@ -24,16 +19,9 @@ export type WatchedRegionRow = {
 
 export type WatchedRegionStore = {
   listByUser(userId: string): Promise<WatchedRegionRow[]>;
-  findByUserAndRegion(
-    userId: string,
-    regionId: string,
-  ): Promise<WatchedRegionRow | undefined>;
+  findByUserAndRegion(userId: string, regionId: string): Promise<WatchedRegionRow | undefined>;
   countByUser(userId: string): Promise<number>;
-  insert(row: {
-    id: string;
-    userId: string;
-    regionId: string;
-  }): Promise<void>;
+  insert(row: { id: string; userId: string; regionId: string }): Promise<void>;
   deleteByUserAndRegion(userId: string, regionId: string): Promise<void>;
 };
 
@@ -52,12 +40,7 @@ export function createDrizzleWatchedRegionStore<T extends Record<string, unknown
       const rows = await db
         .select()
         .from(watchedRegion)
-        .where(
-          and(
-            eq(watchedRegion.userId, userId),
-            eq(watchedRegion.regionId, regionId),
-          ),
-        )
+        .where(and(eq(watchedRegion.userId, userId), eq(watchedRegion.regionId, regionId)))
         .limit(1);
 
       return rows[0];
@@ -79,12 +62,7 @@ export function createDrizzleWatchedRegionStore<T extends Record<string, unknown
     deleteByUserAndRegion: async (userId, regionId) => {
       await db
         .delete(watchedRegion)
-        .where(
-          and(
-            eq(watchedRegion.userId, userId),
-            eq(watchedRegion.regionId, regionId),
-          ),
-        );
+        .where(and(eq(watchedRegion.userId, userId), eq(watchedRegion.regionId, regionId)));
     },
   };
 }
@@ -115,19 +93,13 @@ export function createWatchedRegionsRoutes(options: WatchedRegionsOptions) {
     try {
       body = await c.req.json();
     } catch {
-      return c.json(
-        { error: { code: "invalid_body", message: "Invalid request body" } },
-        400,
-      );
+      return c.json({ error: { code: "invalid_body", message: "Invalid request body" } }, 400);
     }
 
     const { regionId } = body;
 
     if (typeof regionId !== "string" || !isRegionId(regionId)) {
-      return c.json(
-        { error: { code: "region_not_found", message: "Region not found" } },
-        404,
-      );
+      return c.json({ error: { code: "region_not_found", message: "Region not found" } }, 404);
     }
 
     const existing = await store.findByUserAndRegion(user.id, regionId);
@@ -157,10 +129,7 @@ export function createWatchedRegionsRoutes(options: WatchedRegionsOptions) {
 
     await store.insert({ id, userId: user.id, regionId });
 
-    return c.json(
-      { watchedRegion: enrichWatchedRegion(id, regionId, new Date()) },
-      201,
-    );
+    return c.json({ watchedRegion: enrichWatchedRegion(id, regionId, new Date()) }, 201);
   });
 
   router.delete("/:regionId", async (c) => {

@@ -39,9 +39,7 @@ describe("normalizeSwpcResponse", () => {
 
     const alts = signals.filter((s) => s.providerEventId !== "TIIA");
     for (const signal of alts) {
-      expect(signal.dedupeKey).toMatch(
-        /^signal:space-weather:noaa-swpc:provider-derived:/,
-      );
+      expect(signal.dedupeKey).toMatch(/^signal:space-weather:noaa-swpc:provider-derived:/);
     }
 
     expect(signals[0]!.dedupeKey).toBe(
@@ -113,10 +111,7 @@ describe("normalizeSwpcResponse", () => {
 
     expect(signals).toHaveLength(1);
     expect(signals[0]!.providerEventId).toBe("good");
-    expect(skipped).toEqual([
-      { productId: "bad-no-code" },
-      { productId: "bad-no-title" },
-    ]);
+    expect(skipped).toEqual([{ productId: "bad-no-code" }, { productId: "bad-no-title" }]);
   });
 
   it("skips schema-invalid items (missing product_id) without crashing", () => {

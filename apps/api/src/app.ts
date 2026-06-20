@@ -3,15 +3,8 @@ import type { MiddlewareHandler } from "hono";
 import type { Auth } from "./auth";
 import type { AppBindings } from "./auth-middleware";
 import { regionsRoutes } from "./regions";
-import {
-  createSignalFeedRoutes,
-  createSignalMapRoutes,
-  type SignalFeedStore,
-} from "./signals";
-import {
-  createWatchedRegionsRoutes,
-  type WatchedRegionStore,
-} from "./watched-regions";
+import { createSignalFeedRoutes, createSignalMapRoutes, type SignalFeedStore } from "./signals";
+import { createWatchedRegionsRoutes, type WatchedRegionStore } from "./watched-regions";
 
 export type WatchedRegionsOptions = {
   store: WatchedRegionStore;

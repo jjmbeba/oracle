@@ -48,20 +48,22 @@ const SEVERITY_RANK: Record<SignalSeverity, number> = {
 
 const alertIdSchema = z.union([z.number().positive(), z.string().min(1)]);
 
-const openweatherAlertDetailSchema = z.object({
-  id: alertIdSchema,
-  sender_name: z.string(),
-  event: z.string(),
-  start: z.number().positive(),
-  end: z.number().positive(),
-  description: z.array(
-    z.object({
-      locale: z.string(),
-      description: z.string(),
-    }),
-  ),
-  tags: z.array(z.string()),
-}).strict();
+const openweatherAlertDetailSchema = z
+  .object({
+    id: alertIdSchema,
+    sender_name: z.string(),
+    event: z.string(),
+    start: z.number().positive(),
+    end: z.number().positive(),
+    description: z.array(
+      z.object({
+        locale: z.string(),
+        description: z.string(),
+      }),
+    ),
+    tags: z.array(z.string()),
+  })
+  .strict();
 
 export function openweatherTagToSeverity(tags: readonly string[]): SignalSeverity {
   let highest: SignalSeverity = "minor";

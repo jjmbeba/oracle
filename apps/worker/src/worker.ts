@@ -1,8 +1,9 @@
 import { createDatabaseConnection } from "@oracle/db";
-import { readDatabaseUrl, readUsgsPollIntervalMs } from "./config";
+import { readDatabaseUrl, readSwpcPollIntervalMs, readUsgsPollIntervalMs } from "./config";
 import { createWorkerLogger, type WorkerLogger } from "./logger";
 import { createScheduler, type Scheduler } from "./scheduler";
 import { createUsgsIngestionJob } from "./jobs/usgs-ingestion";
+import { createSwpcIngestionJob } from "./jobs/swpc-ingestion";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -33,6 +34,7 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
   const signals = options.signals ?? process;
   const env = options.env ?? process.env;
   const usgsPollIntervalMs = readUsgsPollIntervalMs(env);
+  const swpcPollIntervalMs = readSwpcPollIntervalMs(env);
   let shuttingDown = false;
   let dbConnection: ReturnType<typeof createDatabaseConnection> | undefined;
 
@@ -49,11 +51,19 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
     env,
   });
 
+  const swpcJob = createSwpcIngestionJob({
+    db: dbConnection.db,
+    logger,
+    env,
+  });
+
   scheduler.registerIntervalJob(usgsJob);
+  scheduler.registerIntervalJob(swpcJob);
 
   logger.info("worker.started", {
     metadata: {
       usgsPollIntervalMs,
+      swpcPollIntervalMs,
     },
   });
 

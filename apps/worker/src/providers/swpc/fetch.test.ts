@@ -1,42 +1,42 @@
 import { describe, expect, it, vi } from "vitest";
-import { defaultUsgsUrl, fetchUsgsSignals } from "./fetch";
+import { defaultSwpcUrl, fetchSwpcAlerts } from "./fetch";
 
-describe("fetchUsgsSignals", () => {
+describe("fetchSwpcAlerts", () => {
   it("returns parsed data on success", async () => {
-    const expectedData = { type: "FeatureCollection", features: [] };
+    const expectedData = [{ product_id: "K04A" }];
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(expectedData),
     } as Response);
 
-    const result = await fetchUsgsSignals(mockFetch);
+    const result = await fetchSwpcAlerts(mockFetch);
 
     expect(result.data).toEqual(expectedData);
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the default USGS URL when none is provided", async () => {
+  it("uses the default SWPC URL when none is provided", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({}),
+      json: () => Promise.resolve([]),
     } as Response);
 
-    await fetchUsgsSignals(mockFetch);
+    await fetchSwpcAlerts(mockFetch);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      defaultUsgsUrl,
+      defaultSwpcUrl,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });
 
   it("uses the provided URL", async () => {
-    const customUrl = "https://example.com/usgs";
+    const customUrl = "https://example.com/swpc";
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({}),
+      json: () => Promise.resolve([]),
     } as Response);
 
-    await fetchUsgsSignals(mockFetch, customUrl);
+    await fetchSwpcAlerts(mockFetch, customUrl);
 
     expect(mockFetch).toHaveBeenCalledWith(
       customUrl,
@@ -44,15 +44,15 @@ describe("fetchUsgsSignals", () => {
     );
   });
 
-  it("labels non-ok responses with the USGS API prefix", async () => {
+  it("labels non-ok responses with the SWPC API prefix", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
-      status: 503,
-      statusText: "Service Unavailable",
+      status: 500,
+      statusText: "Internal Server Error",
     } as Response);
 
-    await expect(fetchUsgsSignals(mockFetch)).rejects.toThrow(
-      "USGS API returned 503: Service Unavailable",
+    await expect(fetchSwpcAlerts(mockFetch)).rejects.toThrow(
+      "SWPC API returned 500: Internal Server Error",
     );
   });
 });

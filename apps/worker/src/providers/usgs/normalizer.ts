@@ -2,27 +2,33 @@ import { z } from "zod";
 import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
 import { createSignalDedupeMetadata } from "@oracle/domain";
 
-const usgsPropertiesSchema = z.object({
-  mag: z.number().nullable().optional(),
-  place: z.string(),
-  time: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
-    error: "Invalid epoch milliseconds for properties.time",
-  }),
-  updated: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
-    error: "Invalid epoch milliseconds for properties.updated",
-  }),
-  url: z.string(),
-}).passthrough();
+const usgsPropertiesSchema = z
+  .object({
+    mag: z.number().nullable().optional(),
+    place: z.string(),
+    time: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
+      error: "Invalid epoch milliseconds for properties.time",
+    }),
+    updated: z.number().refine((ms) => Number.isFinite(new Date(ms).getTime()), {
+      error: "Invalid epoch milliseconds for properties.updated",
+    }),
+    url: z.string(),
+  })
+  .passthrough();
 
-const usgsFeatureSchema = z.object({
-  type: z.literal("Feature"),
-  id: z.string(),
-  geometry: z.object({
-    type: z.literal("Point"),
-    coordinates: z.tuple([z.number(), z.number()]).rest(z.number()),
-  }).nullable(),
-  properties: usgsPropertiesSchema,
-}).passthrough();
+const usgsFeatureSchema = z
+  .object({
+    type: z.literal("Feature"),
+    id: z.string(),
+    geometry: z
+      .object({
+        type: z.literal("Point"),
+        coordinates: z.tuple([z.number(), z.number()]).rest(z.number()),
+      })
+      .nullable(),
+    properties: usgsPropertiesSchema,
+  })
+  .passthrough();
 
 const usgsResponseSchema = z.object({
   type: z.literal("FeatureCollection"),
@@ -72,9 +78,10 @@ function normalizeUsgsFeature(feature: unknown): NormalizedSignal | null {
   };
 }
 
-export function normalizeUsgsResponse(
-  input: unknown,
-): { signals: NormalizedSignal[]; skipped: { id: string }[] } {
+export function normalizeUsgsResponse(input: unknown): {
+  signals: NormalizedSignal[];
+  skipped: { id: string }[];
+} {
   const { features } = usgsResponseSchema.parse(input);
   const signals: NormalizedSignal[] = [];
   const skipped: { id: string }[] = [];
