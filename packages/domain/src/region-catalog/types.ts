@@ -10,6 +10,8 @@ export type Country = {
   readonly kind: "country";
   readonly alpha2: Uppercase<string>;
   readonly displayName: string;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
 };
 
 export type CountryGroup = {
@@ -49,6 +51,8 @@ export type GroupOverviewFacts = {
   readonly population: number | null;
   readonly languages: readonly string[];
   readonly currencies: readonly string[];
+  readonly latitude: number | null;
+  readonly longitude: number | null;
   readonly gdpPerCapita: number | null;
   readonly populationDensity: number | null;
 };

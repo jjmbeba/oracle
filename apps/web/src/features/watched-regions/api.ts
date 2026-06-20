@@ -1,6 +1,7 @@
 import type { RegionSearchResult } from "../regions/api";
 
 export const WATCHED_REGIONS_PATH = "/api/watched-regions";
+export const MAX_WATCHED_REGIONS = 10;
 
 export type WatchedRegion = {
   readonly id: string;

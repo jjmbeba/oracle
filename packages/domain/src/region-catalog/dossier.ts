@@ -1,16 +1,12 @@
-import { getRegionById } from "./catalog";
+import { getCountryById, getRegionById } from "./catalog";
 import { countryFactRecords } from "./source-country-facts";
 import type {
-  ContinentDossier,
-  CountryDossier,
-  CountryId,
   CountryOverviewFacts,
   FactSource,
-  GroupDossier,
   GroupOverviewFacts,
   RegionDossier,
+  RegionId,
 } from "./types";
-import type { RegionId } from "./types";
 
 const COMMON_SOURCES: readonly FactSource[] = [
   { label: "UN Statistics 2024", url: "https://unstats.un.org" },
@@ -42,11 +38,6 @@ for (const record of countryFactRecords) {
 const getCountryFacts = (alpha2: string): CountryOverviewFacts | null =>
   factsByAlpha2.get(alpha2) ?? null;
 
-const alpha2FromId = (id: CountryId): string => {
-  const match = id.match(/^country:([a-z]{2})$/);
-  return match ? match[1].toUpperCase() : "";
-};
-
 const safeNumberSum = (values: (number | null)[]): number | null => {
   const valid = values.filter((v): v is number => v !== null);
   return valid.length > 0 ? valid.reduce((a, b) => a + b, 0) : null;
@@ -57,6 +48,21 @@ const safeNumberAvg = (values: (number | null)[]): number | null => {
   return valid.length > 0
     ? Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 100) / 100
     : null;
+};
+
+const safeCentroid = (
+  lats: (number | null)[],
+  lngs: (number | null)[],
+): { latitude: number | null; longitude: number | null } => {
+  const validLats = lats.filter((v): v is number => v !== null);
+  const validLngs = lngs.filter((v): v is number => v !== null);
+  if (validLats.length === 0 || validLngs.length === 0) {
+    return { latitude: null, longitude: null };
+  }
+  return {
+    latitude: Math.round((validLats.reduce((a, b) => a + b, 0) / validLats.length) * 100) / 100,
+    longitude: Math.round((validLngs.reduce((a, b) => a + b, 0) / validLngs.length) * 100) / 100,
+  };
 };
 
 const collectUnique = (values: (readonly string[] | null)[]): readonly string[] => {
@@ -72,23 +78,30 @@ const collectUnique = (values: (readonly string[] | null)[]): readonly string[] 
 };
 
 export const aggregateMemberFacts = (
-  memberCountryIds: readonly CountryId[],
+  memberCountryIds: readonly string[],
 ): GroupOverviewFacts | null => {
   const facts: CountryOverviewFacts[] = [];
 
   for (const id of memberCountryIds) {
-    const alpha2 = alpha2FromId(id);
-    if (!alpha2) continue;
-    const f = getCountryFacts(alpha2);
+    const country = getCountryById(id as never);
+    if (!country) continue;
+    const f = getCountryFacts(country.alpha2);
     if (f) facts.push(f);
   }
 
   if (facts.length === 0) return null;
 
+  const centroid = safeCentroid(
+    facts.map((f) => f.latitude),
+    facts.map((f) => f.longitude),
+  );
+
   return {
     population: safeNumberSum(facts.map((f) => f.population)),
     languages: collectUnique(facts.map((f) => f.languages)),
     currencies: collectUnique(facts.map((f) => f.currencies)),
+    latitude: centroid.latitude,
+    longitude: centroid.longitude,
     gdpPerCapita: safeNumberAvg(facts.map((f) => f.gdpPerCapita)),
     populationDensity: safeNumberAvg(facts.map((f) => f.populationDensity)),
   };
@@ -99,10 +112,9 @@ export const getRegionDossier = (regionId: RegionId): RegionDossier | null => {
   if (!region) return null;
 
   if (region.kind === "country") {
-    const alpha2 = region.alpha2;
-    const facts = getCountryFacts(alpha2);
+    const facts = getCountryFacts(region.alpha2);
 
-    const result: CountryDossier = {
+    return {
       region: {
         kind: "country",
         id: region.id,
@@ -112,14 +124,12 @@ export const getRegionDossier = (regionId: RegionId): RegionDossier | null => {
       overviewFacts: facts,
       factSources: COMMON_SOURCES,
     };
-
-    return result;
   }
 
   if (region.kind === "country-group") {
     const facts = aggregateMemberFacts(region.memberCountryIds);
 
-    const result: GroupDossier = {
+    return {
       region: {
         kind: "country-group",
         id: region.id,
@@ -129,13 +139,11 @@ export const getRegionDossier = (regionId: RegionId): RegionDossier | null => {
       overviewFacts: facts,
       factSources: COMMON_SOURCES,
     };
-
-    return result;
   }
 
   const facts = aggregateMemberFacts(region.memberCountryIds);
 
-  const result: ContinentDossier = {
+  return {
     region: {
       kind: "continent",
       id: region.id,
@@ -145,6 +153,5 @@ export const getRegionDossier = (regionId: RegionId): RegionDossier | null => {
     overviewFacts: facts,
     factSources: COMMON_SOURCES,
   };
-
-  return result;
 };
+

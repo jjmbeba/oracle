@@ -12,6 +12,7 @@
     "format": "oxfmt -c ../../.oxfmt.json src vite.config.ts index.html"
   },
   "dependencies": {
+    "@oracle/domain": "workspace:*",
     "@tanstack/vue-query": "^5.101.0",
     "better-auth": "^1.6.15",
     "maplibre-gl": "^5.24.0",
