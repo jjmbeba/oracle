@@ -52,7 +52,7 @@ describe("fetchUsgsSignals", () => {
     } as Response);
 
     await expect(fetchUsgsSignals(mockFetch)).rejects.toThrow(
-      "USGS API returned 503: Service Unavailable",
+      "USGS API returned 503 Service Unavailable for",
     );
   });
 });

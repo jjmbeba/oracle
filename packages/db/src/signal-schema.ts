@@ -1,4 +1,13 @@
-import { doublePrecision, index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  doublePrecision,
+  index,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export const signal = pgTable(
   "signal",
@@ -30,9 +39,7 @@ export const signal = pgTable(
     geometry: jsonb("geometry"),
     sourceLinkUrl: text("source_link_url"),
     sourceLinkLabel: text("source_link_label"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -56,15 +63,11 @@ export const providerFreshness = pgTable(
     lastSuccessfulPollAt: timestamp("last_successful_poll_at", {
       withTimezone: true,
     }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [
-    primaryKey({ columns: [table.provider, table.category] }),
-  ],
+  (table) => [primaryKey({ columns: [table.provider, table.category] })],
 );

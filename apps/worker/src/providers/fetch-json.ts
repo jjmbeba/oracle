@@ -26,10 +26,25 @@ export async function fetchJson(
   try {
     const response = await fetchFn(url, { signal: controller.signal });
     if (!response.ok) {
-      throw new Error(`${errorLabel} returned ${response.status}: ${response.statusText}`);
+      const httpError = new Error(
+        `${errorLabel} returned ${response.status} ${response.statusText} for ${url}`,
+      );
+      Object.assign(httpError, { url, errorLabel, status: response.status });
+      throw httpError;
     }
     const data: unknown = await response.json();
     return { data, response };
+  } catch (error) {
+    if (error instanceof Error) {
+      const annotated = error as Error & {
+        url?: string;
+        errorLabel?: string;
+        status?: number;
+      };
+      if (annotated.url === undefined) annotated.url = url;
+      if (annotated.errorLabel === undefined) annotated.errorLabel = errorLabel;
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

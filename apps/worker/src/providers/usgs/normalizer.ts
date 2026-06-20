@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
+import type { NormalizedRejection, NormalizedSignal, SignalSeverity } from "@oracle/domain";
 import { createSignalDedupeMetadata } from "@oracle/domain";
 
 const usgsPropertiesSchema = z
@@ -80,22 +80,25 @@ function normalizeUsgsFeature(feature: unknown): NormalizedSignal | null {
 
 export function normalizeUsgsResponse(input: unknown): {
   signals: NormalizedSignal[];
-  skipped: { id: string }[];
+  skipped: NormalizedRejection[];
 } {
   const { features } = usgsResponseSchema.parse(input);
   const signals: NormalizedSignal[] = [];
-  const skipped: { id: string }[] = [];
+  const skipped: NormalizedRejection[] = [];
 
   for (const feature of features) {
+    const raw =
+      feature != null && typeof feature === "object" ? (feature as Record<string, unknown>) : null;
+    const providerEventId = raw !== null && typeof raw.id === "string" ? raw.id : "unknown";
+
     const signal = normalizeUsgsFeature(feature);
     if (signal) {
       signals.push(signal);
     } else {
-      const raw =
-        feature != null && typeof feature === "object"
-          ? (feature as Record<string, unknown>)
-          : null;
-      skipped.push({ id: raw !== null && typeof raw.id === "string" ? raw.id : "unknown" });
+      skipped.push({
+        providerEventId,
+        reason: "schema-validation",
+      });
     }
   }
 

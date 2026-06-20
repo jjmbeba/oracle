@@ -1,9 +1,16 @@
 import { createDatabaseConnection } from "@oracle/db";
-import { readDatabaseUrl, readSwpcPollIntervalMs, readUsgsPollIntervalMs } from "./config";
+import {
+  readDatabaseUrl,
+  readOpenweatherApiKey,
+  readOpenweatherPollIntervalMs,
+  readSwpcPollIntervalMs,
+  readUsgsPollIntervalMs,
+} from "./config";
 import { createWorkerLogger, type WorkerLogger } from "./logger";
 import { createScheduler, type Scheduler } from "./scheduler";
 import { createUsgsIngestionJob } from "./jobs/usgs-ingestion";
 import { createSwpcIngestionJob } from "./jobs/swpc-ingestion";
+import { createOpenweatherIngestionJob } from "./jobs/openweather-ingestion";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -35,6 +42,8 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
   const env = options.env ?? process.env;
   const usgsPollIntervalMs = readUsgsPollIntervalMs(env);
   const swpcPollIntervalMs = readSwpcPollIntervalMs(env);
+  const openweatherPollIntervalMs = readOpenweatherPollIntervalMs(env);
+  const openweatherApiKey = readOpenweatherApiKey(env);
   let shuttingDown = false;
   let dbConnection: ReturnType<typeof createDatabaseConnection> | undefined;
 
@@ -57,13 +66,22 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
     env,
   });
 
+  const openweatherJob = createOpenweatherIngestionJob({
+    db: dbConnection.db,
+    logger,
+    env,
+  });
+
   scheduler.registerIntervalJob(usgsJob);
   scheduler.registerIntervalJob(swpcJob);
+  scheduler.registerIntervalJob(openweatherJob);
 
   logger.info("worker.started", {
     metadata: {
       usgsPollIntervalMs,
       swpcPollIntervalMs,
+      openweatherPollIntervalMs,
+      openweatherApiKeyConfigured: openweatherApiKey.length > 0,
     },
   });
 

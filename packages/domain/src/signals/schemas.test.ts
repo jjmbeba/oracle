@@ -22,19 +22,9 @@ const baseSignal = {
 
 describe("signal domain values", () => {
   it("defines the MVP signal categories, scopes, severity, and confidence", () => {
-    expect(signalCategories).toEqual([
-      "earthquake",
-      "weather",
-      "space-weather",
-    ]);
+    expect(signalCategories).toEqual(["earthquake", "weather", "space-weather"]);
     expect(signalScopes).toEqual(["global", "region", "point", "geometry"]);
-    expect(signalSeverities).toEqual([
-      "minor",
-      "moderate",
-      "significant",
-      "severe",
-      "extreme",
-    ]);
+    expect(signalSeverities).toEqual(["minor", "moderate", "significant", "severe", "extreme"]);
     expect(signalConfidences).toEqual(["high", "medium", "low"]);
   });
 
@@ -216,9 +206,7 @@ describe("normalized signal schema", () => {
     });
 
     expect(parsed.providerEventId).toBe("abc123");
-    expect(parsed.possibleCrossProviderDuplicateKey).toBe(
-      "opaque-cross-provider-key",
-    );
+    expect(parsed.possibleCrossProviderDuplicateKey).toBe("opaque-cross-provider-key");
     expect(parsed.sourceLink?.label).toBe("Example Source");
   });
 

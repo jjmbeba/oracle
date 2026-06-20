@@ -8,12 +8,19 @@ config({
 });
 
 export {
+  defaultOpenweatherPollIntervalMs,
   defaultPlaceholderIntervalMs,
+  defaultSwpcPollIntervalMs,
   defaultUsgsPollIntervalMs,
   maxIntervalMs,
+  parseOpenweatherPollIntervalMs,
   parsePlaceholderIntervalMs,
+  parseSwpcPollIntervalMs,
   parseUsgsPollIntervalMs,
   readDatabaseUrl,
+  readOpenweatherApiKey,
+  readOpenweatherPollIntervalMs,
+  readSwpcPollIntervalMs,
   readUsgsPollIntervalMs,
 } from "./config";
 export { createWorkerLogger, serializeError } from "./logger";

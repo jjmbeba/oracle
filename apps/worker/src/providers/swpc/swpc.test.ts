@@ -111,7 +111,16 @@ describe("normalizeSwpcResponse", () => {
 
     expect(signals).toHaveLength(1);
     expect(signals[0]!.providerEventId).toBe("good");
-    expect(skipped).toEqual([{ productId: "bad-no-code" }, { productId: "bad-no-title" }]);
+    expect(skipped).toEqual([
+      {
+        providerEventId: "bad-no-code",
+        reason: "missing-required-field",
+      },
+      {
+        providerEventId: "bad-no-title",
+        reason: "missing-required-field",
+      },
+    ]);
   });
 
   it("skips schema-invalid items (missing product_id) without crashing", () => {
@@ -130,7 +139,13 @@ describe("normalizeSwpcResponse", () => {
 
     expect(signals).toHaveLength(1);
     expect(signals[0]!.providerEventId).toBe("valid");
-    expect(skipped).toEqual([{ productId: "unknown" }]);
+    expect(skipped).toEqual([
+      {
+        providerEventId: "unknown",
+        reason: "schema-validation",
+        issues: expect.arrayContaining([expect.objectContaining({ path: "product_id" })]),
+      },
+    ]);
   });
 
   it("skips items with malformed timestamps", () => {
@@ -151,7 +166,7 @@ describe("normalizeSwpcResponse", () => {
 
     expect(signals).toHaveLength(1);
     expect(signals[0]!.providerEventId).toBe("good");
-    expect(skipped).toEqual([{ productId: "bad-date" }]);
+    expect(skipped).toEqual([{ providerEventId: "bad-date", reason: "invalid-date" }]);
   });
 
   it("throws on non-array input", () => {

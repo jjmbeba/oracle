@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
+import type { NormalizedRejection, NormalizedSignal, SignalSeverity } from "@oracle/domain";
 import { createSignalDedupeMetadata } from "@oracle/domain";
 
 const MESSAGE_CODE_PREFIXES = ["ALT", "WAR", "WAT", "SUM"] as const;
@@ -109,23 +109,31 @@ function normalizeSwpcAlert(item: z.infer<typeof swpcAlertItemSchema>): Normaliz
 
 export function normalizeSwpcResponse(input: unknown): {
   signals: NormalizedSignal[];
-  skipped: { productId: string }[];
+  skipped: NormalizedRejection[];
 } {
   const rawItems = z.array(z.unknown()).parse(input);
   const signals: NormalizedSignal[] = [];
-  const skipped: { productId: string }[] = [];
+  const skipped: NormalizedRejection[] = [];
 
   for (const rawItem of rawItems) {
+    const productId =
+      typeof rawItem === "object" &&
+      rawItem !== null &&
+      "product_id" in rawItem &&
+      typeof (rawItem as { product_id?: unknown }).product_id === "string"
+        ? (rawItem as { product_id: string }).product_id
+        : "unknown";
+
     const parsed = swpcAlertItemSchema.safeParse(rawItem);
     if (!parsed.success) {
-      const productId =
-        typeof rawItem === "object" &&
-        rawItem !== null &&
-        "product_id" in rawItem &&
-        typeof (rawItem as { product_id?: unknown }).product_id === "string"
-          ? (rawItem as { product_id: string }).product_id
-          : "unknown";
-      skipped.push({ productId });
+      skipped.push({
+        providerEventId: productId,
+        reason: "schema-validation",
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      });
       continue;
     }
 
@@ -133,7 +141,12 @@ export function normalizeSwpcResponse(input: unknown): {
     if (signal) {
       signals.push(signal);
     } else {
-      skipped.push({ productId: parsed.data.product_id });
+      const issueDate = new Date(parsed.data.issue_datetime + "Z");
+      const reason = Number.isNaN(issueDate.getTime()) ? "invalid-date" : "missing-required-field";
+      skipped.push({
+        providerEventId: parsed.data.product_id,
+        reason,
+      });
     }
   }
 

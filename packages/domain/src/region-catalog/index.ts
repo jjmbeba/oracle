@@ -9,16 +9,9 @@ export {
   regionById,
   regions,
 } from "./catalog";
-export {
-  getRegionDossier,
-  aggregateMemberFacts,
-} from "./dossier";
+export { getRegionDossier, aggregateMemberFacts } from "./dossier";
 export { regionIdSchema } from "./schemas";
-export {
-  searchRegions,
-  toRegionSearchResult,
-  type RegionSearchResult,
-} from "./search";
+export { searchRegions, toRegionSearchResult, type RegionSearchResult } from "./search";
 export type {
   Continent,
   ContinentDossier,

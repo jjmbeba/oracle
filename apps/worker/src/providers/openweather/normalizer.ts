@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { NormalizedSignal, SignalSeverity } from "@oracle/domain";
+import type {
+  NormalizedRejection,
+  NormalizedRejectionIssue,
+  NormalizedSignal,
+  SignalSeverity,
+} from "@oracle/domain";
 import { createSignalDedupeMetadata } from "@oracle/domain";
 
 const TAG_SEVERITY: Record<string, SignalSeverity> = {
@@ -48,6 +53,8 @@ const SEVERITY_RANK: Record<SignalSeverity, number> = {
 
 const alertIdSchema = z.union([z.number().positive(), z.string().min(1)]);
 
+const openweatherAlertIdExtractionSchema = z.object({ id: z.unknown() }).passthrough();
+
 const openweatherAlertDetailSchema = z
   .object({
     id: alertIdSchema,
@@ -57,13 +64,25 @@ const openweatherAlertDetailSchema = z
     end: z.number().positive(),
     description: z.array(
       z.object({
-        locale: z.string(),
-        description: z.string(),
+        locale: z.string().optional(),
+        description: z.string().optional(),
       }),
     ),
     tags: z.array(z.string()),
   })
   .strict();
+
+const extractAlertId = (input: unknown): string => {
+  const parsed = openweatherAlertIdExtractionSchema.safeParse(input);
+  if (!parsed.success) return "unknown";
+  return String(parsed.data.id);
+};
+
+const formatIssues = (issues: z.ZodIssue[]): NormalizedRejectionIssue[] =>
+  issues.map((issue) => ({
+    path: issue.path.join("."),
+    message: issue.message,
+  }));
 
 export function openweatherTagToSeverity(tags: readonly string[]): SignalSeverity {
   let highest: SignalSeverity = "minor";
@@ -81,33 +100,57 @@ export function openweatherTagToSeverity(tags: readonly string[]): SignalSeverit
 export function deriveOpenweatherTitle(
   event: string,
   tags: readonly string[],
-  description: readonly { locale: string; description: string }[],
+  description: readonly { locale?: string; description?: string }[],
 ): string {
   if (event.trim().length > 0) return event.trim();
 
   if (tags.length > 0) return `${tags.join(", ")} Alert`;
 
-  if (description.length > 0) {
-    const enDesc = description.find((d) => d.locale === "en");
-    const preferred = enDesc ?? description[0]!;
-    const truncated = preferred.description.slice(0, 80).trim();
+  const withText = description.filter(
+    (d) => d.description !== undefined && d.description.trim().length > 0,
+  );
+  if (withText.length > 0) {
+    const enDesc = withText.find((d) => d.locale === "en");
+    const preferred = enDesc ?? withText[0]!;
+    const truncated = preferred.description!.slice(0, 80).trim();
     if (truncated.length > 0) return truncated;
   }
 
   return "Weather Alert";
 }
 
+export type NormalizeOpenweatherAlertResult = {
+  signal: NormalizedSignal | null;
+  rejection: NormalizedRejection | null;
+};
+
 export function normalizeOpenweatherAlert(
   input: unknown,
   coordinates: [number, number],
-): NormalizedSignal | null {
+): NormalizeOpenweatherAlertResult {
+  const providerEventId = extractAlertId(input);
+
   const parsed = openweatherAlertDetailSchema.safeParse(input);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return {
+      signal: null,
+      rejection: {
+        providerEventId,
+        reason: "schema-validation",
+        issues: formatIssues(parsed.error.issues),
+      },
+    };
+  }
 
   const { id, sender_name, event, start, description, tags } = parsed.data;
 
   const effectiveAtDate = new Date(start * 1000);
-  if (Number.isNaN(effectiveAtDate.getTime())) return null;
+  if (Number.isNaN(effectiveAtDate.getTime())) {
+    return {
+      signal: null,
+      rejection: { providerEventId, reason: "invalid-date" },
+    };
+  }
 
   const { dedupeKey } = createSignalDedupeMetadata({
     strategy: "provider-native",
@@ -117,18 +160,59 @@ export function normalizeOpenweatherAlert(
   });
 
   return {
-    provider: "openweather",
-    dedupeKey,
-    providerEventId: String(id),
-    category: "weather",
-    title: deriveOpenweatherTitle(event, tags, description),
-    severity: openweatherTagToSeverity(tags),
-    confidence: "high",
-    effectiveAt: effectiveAtDate.toISOString(),
-    scope: { kind: "point", coordinates },
-    sourceLink: {
-      url: "https://openweathermap.org/api/one-call-4",
-      label: sender_name || "OpenWeather",
+    signal: {
+      provider: "openweather",
+      dedupeKey,
+      providerEventId: String(id),
+      category: "weather",
+      title: deriveOpenweatherTitle(event, tags, description),
+      severity: openweatherTagToSeverity(tags),
+      confidence: "high",
+      effectiveAt: effectiveAtDate.toISOString(),
+      scope: { kind: "point", coordinates },
+      sourceLink: {
+        url: "https://openweathermap.org/api/one-call-4",
+        label: sender_name || "OpenWeather",
+      },
     },
+    rejection: null,
   };
+}
+
+const openweatherFetchPayloadSchema = z
+  .object({
+    alerts: z.array(
+      z
+        .object({
+          coordinates: z.tuple([z.number(), z.number()]),
+          payload: z.unknown(),
+        })
+        .passthrough(),
+    ),
+  })
+  .passthrough();
+
+export function normalizeOpenweatherResponse(input: unknown): {
+  signals: NormalizedSignal[];
+  skipped: NormalizedRejection[];
+} {
+  const parsed = openweatherFetchPayloadSchema.safeParse(input);
+  if (!parsed.success) {
+    return { signals: [], skipped: [] };
+  }
+
+  const signals: NormalizedSignal[] = [];
+  const skipped: NormalizedRejection[] = [];
+
+  for (const entry of parsed.data.alerts) {
+    const { signal, rejection } = normalizeOpenweatherAlert(entry.payload, entry.coordinates);
+    if (signal) {
+      signals.push(signal);
+    }
+    if (rejection) {
+      skipped.push(rejection);
+    }
+  }
+
+  return { signals, skipped };
 }

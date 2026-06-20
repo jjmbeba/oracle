@@ -1,14 +1,7 @@
 import { and, eq, getTableColumns, gte, inArray, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import {
-  normalizedSignalSchema,
-  signalGeometrySchema,
-} from "@oracle/domain";
-import type {
-  NormalizedSignal,
-  SignalCategory,
-  SignalScope,
-} from "@oracle/domain";
+import { normalizedSignalSchema, signalGeometrySchema } from "@oracle/domain";
+import type { NormalizedSignal, SignalCategory, SignalScope } from "@oracle/domain";
 import { providerFreshness, signal } from "./signal-schema";
 import type { schema } from "./schema";
 
@@ -107,16 +100,14 @@ const reconstructSourceLink = (
   return label ? { url, label } : { url };
 };
 
-const dateToIsoString = (d: Date | null): string | undefined =>
-  d?.toISOString() ?? undefined;
+const dateToIsoString = (d: Date | null): string | undefined => d?.toISOString() ?? undefined;
 
 const rowToNormalizedSignal = (row: SignalRow): NormalizedSignal =>
   normalizedSignalSchema.parse({
     provider: row.provider,
     dedupeKey: row.dedupeKey,
     providerEventId: row.providerEventId ?? undefined,
-    possibleCrossProviderDuplicateKey:
-      row.possibleCrossProviderDuplicateKey ?? undefined,
+    possibleCrossProviderDuplicateKey: row.possibleCrossProviderDuplicateKey ?? undefined,
     category: row.category,
     title: row.title,
     severity: row.severity,
@@ -141,16 +132,13 @@ export async function upsertSignal(
       provider: signalData.provider,
       dedupeKey: signalData.dedupeKey,
       providerEventId: signalData.providerEventId ?? null,
-      possibleCrossProviderDuplicateKey:
-        signalData.possibleCrossProviderDuplicateKey ?? null,
+      possibleCrossProviderDuplicateKey: signalData.possibleCrossProviderDuplicateKey ?? null,
       category: signalData.category,
       title: signalData.title,
       severity: signalData.severity,
       confidence: signalData.confidence,
       effectiveAt: new Date(signalData.effectiveAt),
-      occurredAt: signalData.occurredAt
-        ? new Date(signalData.occurredAt)
-        : null,
+      occurredAt: signalData.occurredAt ? new Date(signalData.occurredAt) : null,
       issuedAt: signalData.issuedAt ? new Date(signalData.issuedAt) : null,
       ...decomposeScope(signalData.scope),
       sourceLinkUrl: signalData.sourceLink?.url ?? null,
@@ -210,10 +198,7 @@ export async function queryProviderFreshness(
     .select()
     .from(providerFreshness)
     .where(
-      and(
-        eq(providerFreshness.provider, providerName),
-        eq(providerFreshness.category, category),
-      )!,
+      and(eq(providerFreshness.provider, providerName), eq(providerFreshness.category, category))!,
     )
     .limit(1);
 
@@ -239,10 +224,7 @@ export async function querySignals(
   // Only region-scoped signals match regionId filters; point/geometry/global scopes lack a regionId and are excluded by design.
   if (filters.regionIds && filters.regionIds.length > 0) {
     conditions.push(
-      and(
-        eq(signal.scopeKind, "region"),
-        inArray(signal.regionId, filters.regionIds),
-      )!,
+      and(eq(signal.scopeKind, "region"), inArray(signal.regionId, filters.regionIds))!,
     );
   }
 
@@ -277,12 +259,7 @@ export async function querySignalFeed(
   const rows = await db
     .select()
     .from(signal)
-    .where(
-      and(
-        gte(signal.effectiveAt, filters.since),
-        eq(signal.category, filters.category),
-      )!,
-    )
+    .where(and(gte(signal.effectiveAt, filters.since), eq(signal.category, filters.category))!)
     .orderBy(severityOrder(signal.severity), sql`${signal.effectiveAt} DESC`);
 
   return rows.map(rowToNormalizedSignal);

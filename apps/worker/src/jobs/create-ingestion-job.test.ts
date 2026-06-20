@@ -9,6 +9,7 @@ import type { WorkerLogger } from "../logger";
 
 type LogRecord = {
   event: string;
+  level?: "info" | "warn" | "error";
   error?: unknown;
   metadata?: Record<string, unknown>;
   jobName?: string;
@@ -20,10 +21,13 @@ function createTestLogger(): { records: LogRecord[]; logger: WorkerLogger } {
     records,
     logger: {
       info(event: string, fields: Record<string, unknown> = {}) {
-        records.push({ event, ...fields });
+        records.push({ event, level: "info", ...fields });
+      },
+      warn(event: string, fields: Record<string, unknown> = {}) {
+        records.push({ event, level: "warn", ...fields });
       },
       error(event: string, fields: Record<string, unknown> = {}) {
-        records.push({ event, ...fields });
+        records.push({ event, level: "error", ...fields });
       },
     },
   };
@@ -102,7 +106,7 @@ describe("createIngestionJob", () => {
         response: { ok: true } as Response,
       }),
     );
-    const normalize = vi.fn(() => ({ signals: [validSignal], skipped: [{ id: "skipped" }] }));
+    const normalize = vi.fn(() => ({ signals: [validSignal], skipped: [] }));
 
     vi.mocked(upsertSignal).mockResolvedValue(validSignal);
     vi.mocked(upsertProviderFreshness).mockResolvedValue({
@@ -135,8 +139,76 @@ describe("createIngestionJob", () => {
     const complete = records.find((r) => r.event === "test.ingestion.complete");
     expect(complete?.metadata).toEqual({
       upsertedCount: 1,
+      skippedCount: 0,
+    });
+  });
+
+  it("logs each rejection from the normalizer at warn level", async () => {
+    const fetchData = vi.fn(
+      async (): Promise<JsonFetchResult> => ({
+        data: {},
+        response: { ok: true } as Response,
+      }),
+    );
+    const rejection = {
+      providerEventId: "1234567",
+      reason: "schema-validation" as const,
+      issues: [{ path: "tags", message: "Required" }],
+    };
+    const normalize = vi.fn(() => ({ signals: [], skipped: [rejection] }));
+
+    vi.mocked(upsertProviderFreshness).mockResolvedValue({
+      provider: "test-provider",
+      category: "earthquake",
+      lastSuccessfulPollAt: new Date(),
+    });
+
+    const { logger, records } = createTestLogger();
+    const job = createIngestionJob(
+      buildConfig({ fetchData, normalize, logPrefix: "openweather" }),
+      { db: mockDb, logger },
+    );
+
+    await job.run();
+
+    const rejectionRecord = records.find((r) => r.event === "openweather.normalize.rejected");
+    expect(rejectionRecord).toBeDefined();
+    expect(rejectionRecord?.level).toBe("warn");
+    expect(rejectionRecord?.jobName).toBe("test-ingestion");
+    expect(rejectionRecord?.metadata).toEqual({
+      providerEventId: "1234567",
+      reason: "schema-validation",
+      issues: [{ path: "tags", message: "Required" }],
+    });
+
+    const complete = records.find((r) => r.event === "openweather.ingestion.complete");
+    expect(complete?.metadata).toEqual({
+      upsertedCount: 0,
       skippedCount: 1,
     });
+  });
+
+  it("logs fetch failure with attached URL passthrough", async () => {
+    const fetchError = new TypeError("fetch failed");
+    Object.assign(fetchError, {
+      url: "https://api.openweathermap.org/data/4.0/onecall/alert/abc?appid=k",
+      errorLabel: "OpenWeather API",
+    });
+    const fetchData = vi.fn(async () => {
+      throw fetchError;
+    });
+
+    const { logger, records } = createTestLogger();
+    const job = createIngestionJob(buildConfig({ fetchData, logPrefix: "openweather" }), {
+      db: mockDb,
+      logger,
+    });
+
+    await job.run();
+
+    const failed = records.find((r) => r.event === "openweather.fetch.failed");
+    expect(failed).toBeDefined();
+    expect(failed?.error).toBe(fetchError);
   });
 
   it("logs fetch failure without crashing", async () => {

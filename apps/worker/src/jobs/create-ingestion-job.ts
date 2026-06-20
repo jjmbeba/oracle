@@ -1,7 +1,7 @@
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { upsertProviderFreshness, upsertSignal } from "@oracle/db";
 import type { schema } from "@oracle/db";
-import type { NormalizedSignal, SignalCategory } from "@oracle/domain";
+import type { NormalizedRejection, NormalizedSignal, SignalCategory } from "@oracle/domain";
 import type { ScheduledJob } from "../scheduler";
 import type { WorkerLogger } from "../logger";
 import type { JsonFetchResult } from "../providers/fetch-json";
@@ -10,7 +10,7 @@ export type ProviderFetcher = () => Promise<JsonFetchResult>;
 
 export type ProviderNormalizer = (data: unknown) => {
   signals: NormalizedSignal[];
-  skipped: readonly unknown[];
+  skipped: readonly NormalizedRejection[];
 };
 
 export type IngestionJobConfig = {
@@ -43,7 +43,10 @@ export function createIngestionJob(
       try {
         fetchResult = await fetchData();
       } catch (error: unknown) {
-        logger.error(`${logPrefix}.fetch.failed`, { error });
+        logger.error(`${logPrefix}.fetch.failed`, {
+          jobName: name,
+          error,
+        });
         return;
       }
 
@@ -62,6 +65,13 @@ export function createIngestionJob(
       logger.info(`${logPrefix}.normalized`, {
         metadata: { signalCount: signals.length, skippedCount: skipped.length },
       });
+
+      for (const rejection of skipped) {
+        logger.warn(`${logPrefix}.normalize.rejected`, {
+          jobName: name,
+          metadata: { ...rejection },
+        });
+      }
 
       let upsertedCount = 0;
 

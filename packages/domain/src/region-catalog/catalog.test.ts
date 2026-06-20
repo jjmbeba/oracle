@@ -37,10 +37,7 @@ const memberNames = (region: CountryGroup | Continent): string[] =>
     return country.displayName;
   });
 
-const expectRegion = <T extends Region>(
-  id: T["id"],
-  kind: T["kind"],
-): T => {
+const expectRegion = <T extends Region>(id: T["id"], kind: T["kind"]): T => {
   const region = getRegionById(id);
 
   expect(region).toBeDefined();
@@ -96,9 +93,7 @@ describe("region catalog", () => {
   });
 
   it("keeps derived region indexes consistent", () => {
-    expect(regions).toHaveLength(
-      countries.length + countryGroups.length + continents.length,
-    );
+    expect(regions).toHaveLength(countries.length + countryGroups.length + continents.length);
     expect(regionById.size).toBe(regions.length);
     expect(countryById.size).toBe(countries.length);
 
@@ -109,9 +104,7 @@ describe("region catalog", () => {
 
   it("validates only catalog-backed region IDs", () => {
     expect(regionIdSchema.parse("country:ke")).toBe("country:ke");
-    expect(regionIdSchema.parse("group:eastern-africa")).toBe(
-      "group:eastern-africa",
-    );
+    expect(regionIdSchema.parse("group:eastern-africa")).toBe("group:eastern-africa");
     expect(regionIdSchema.parse("continent:africa")).toBe("continent:africa");
 
     expect(regionIdSchema.safeParse("banana").success).toBe(false);
@@ -139,49 +132,26 @@ describe("region catalog", () => {
   });
 
   it("defines representative Africa regional group membership", () => {
-    const northernAfrica = expectRegion<CountryGroup>(
-      "group:northern-africa",
-      "country-group",
-    );
-    const easternAfrica = expectRegion<CountryGroup>(
-      "group:eastern-africa",
-      "country-group",
-    );
-    const middleAfrica = expectRegion<CountryGroup>(
-      "group:middle-africa",
-      "country-group",
-    );
-    const southernAfrica = expectRegion<CountryGroup>(
-      "group:southern-africa",
-      "country-group",
-    );
-    const westernAfrica = expectRegion<CountryGroup>(
-      "group:western-africa",
-      "country-group",
-    );
+    const northernAfrica = expectRegion<CountryGroup>("group:northern-africa", "country-group");
+    const easternAfrica = expectRegion<CountryGroup>("group:eastern-africa", "country-group");
+    const middleAfrica = expectRegion<CountryGroup>("group:middle-africa", "country-group");
+    const southernAfrica = expectRegion<CountryGroup>("group:southern-africa", "country-group");
+    const westernAfrica = expectRegion<CountryGroup>("group:western-africa", "country-group");
 
     expect(memberNames(northernAfrica)).toContain("Egypt");
     expect(memberNames(easternAfrica)).toContain("Kenya");
-    expect(memberNames(middleAfrica)).toContain(
-      "Democratic Republic of the Congo",
-    );
+    expect(memberNames(middleAfrica)).toContain("Democratic Republic of the Congo");
     expect(memberNames(southernAfrica)).toContain("South Africa");
     expect(memberNames(westernAfrica)).toContain("Nigeria");
   });
 
   it("defines representative UN M49 macro-region continent membership", () => {
     const africa = expectRegion<Continent>("continent:africa", "continent");
-    const americas = expectRegion<Continent>(
-      "continent:americas",
-      "continent",
-    );
+    const americas = expectRegion<Continent>("continent:americas", "continent");
     const asia = expectRegion<Continent>("continent:asia", "continent");
     const europe = expectRegion<Continent>("continent:europe", "continent");
     const oceania = expectRegion<Continent>("continent:oceania", "continent");
-    const antarctica = expectRegion<Continent>(
-      "continent:antarctica",
-      "continent",
-    );
+    const antarctica = expectRegion<Continent>("continent:antarctica", "continent");
 
     expect(memberNames(africa)).toContain("Kenya");
     expect(memberNames(americas)).toContain("Brazil");

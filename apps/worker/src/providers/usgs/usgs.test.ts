@@ -126,7 +126,7 @@ describe("normalizeUsgsResponse", () => {
     expect(signals).toHaveLength(2);
     expect(signals[0]!.providerEventId).toBe("good");
     expect(signals[1]!.providerEventId).toBe("good2");
-    expect(skipped).toEqual([{ id: "bad" }]);
+    expect(skipped).toEqual([{ providerEventId: "bad", reason: "schema-validation" }]);
   });
 
   it("throws on non-FeatureCollection input", () => {

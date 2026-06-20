@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { regionIdSchema } from "../region-catalog";
-import {
-  signalCategories,
-  signalConfidences,
-  signalScopes,
-  signalSeverities,
-} from "./values";
+import { signalCategories, signalConfidences, signalScopes, signalSeverities } from "./values";
 
 export const signalCategorySchema = z.enum(signalCategories);
 export const signalScopeKindSchema = z.enum(signalScopes);
@@ -24,15 +19,11 @@ const isClosedRing = (coordinates: readonly [number, number][]): boolean => {
   const first = coordinates[0];
   const last = coordinates.at(-1);
 
-  return first !== undefined && last !== undefined && first[0] === last[0] &&
-    first[1] === last[1];
+  return first !== undefined && last !== undefined && first[0] === last[0] && first[1] === last[1];
 };
-const linearRingCoordinatesSchema = z
-  .array(positionSchema)
-  .min(4)
-  .refine(isClosedRing, {
-    message: "Polygon rings must close with the starting position",
-  });
+const linearRingCoordinatesSchema = z.array(positionSchema).min(4).refine(isClosedRing, {
+  message: "Polygon rings must close with the starting position",
+});
 const polygonCoordinatesSchema = z.array(linearRingCoordinatesSchema).min(1);
 
 export const signalGeometrySchema = z.discriminatedUnion("type", [

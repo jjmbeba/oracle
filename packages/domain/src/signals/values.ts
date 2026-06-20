@@ -1,8 +1,4 @@
-export const signalCategories = [
-  "earthquake",
-  "weather",
-  "space-weather",
-] as const;
+export const signalCategories = ["earthquake", "weather", "space-weather"] as const;
 
 export type SignalCategory = (typeof signalCategories)[number];
 
@@ -23,13 +19,7 @@ export const signalScopeLabels = {
   geometry: "Geometry",
 } as const satisfies Record<SignalScopeKind, string>;
 
-export const signalSeverities = [
-  "minor",
-  "moderate",
-  "significant",
-  "severe",
-  "extreme",
-] as const;
+export const signalSeverities = ["minor", "moderate", "significant", "severe", "extreme"] as const;
 
 export type SignalSeverity = (typeof signalSeverities)[number];
 
