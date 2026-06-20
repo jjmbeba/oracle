@@ -48,17 +48,13 @@ describe("region search", () => {
   });
 
   it("matches by region ID", () => {
-    expect(searchRegions("group:eastern-africa")[0]?.id).toBe(
-      "group:eastern-africa",
-    );
+    expect(searchRegions("group:eastern-africa")[0]?.id).toBe("group:eastern-africa");
   });
 
   it("orders exact matches before prefix and contains matches", () => {
     const resultIds = searchRegions("africa").map((region) => region.id);
 
     expect(resultIds[0]).toBe("continent:africa");
-    expect(resultIds.indexOf("continent:africa")).toBeLessThan(
-      resultIds.indexOf("country:za"),
-    );
+    expect(resultIds.indexOf("continent:africa")).toBeLessThan(resultIds.indexOf("country:za"));
   });
 });

@@ -1,9 +1,6 @@
 import { countryFactRecords } from "./source-country-facts";
 import { countrySourceRecords } from "./source-countries";
-import {
-  continentSourceRecords,
-  countryGroupSourceRecords,
-} from "./source-regions";
+import { continentSourceRecords, countryGroupSourceRecords } from "./source-regions";
 import type {
   Continent,
   ContinentId,
@@ -15,8 +12,7 @@ import type {
   RegionId,
 } from "./types";
 
-const toCountryId = (alpha2: string): CountryId =>
-  `country:${alpha2.toLowerCase()}` as CountryId;
+const toCountryId = (alpha2: string): CountryId => `country:${alpha2.toLowerCase()}` as CountryId;
 
 const centroidByAlpha2 = new Map<string, { latitude: number; longitude: number }>();
 
@@ -42,28 +38,27 @@ const memberCountryIdsFor = (
     .filter((record) => record[sourceIndex] === regionId)
     .map(([alpha2]) => toCountryId(alpha2));
 
-export const countries: readonly Country[] = countrySourceRecords.map(
-  ([alpha2, displayName]) => {
-    const centroid = centroidByAlpha2.get(alpha2);
+export const countries: readonly Country[] = countrySourceRecords.map(([alpha2, displayName]) => {
+  const centroid = centroidByAlpha2.get(alpha2);
 
-    return {
-      id: toCountryId(alpha2),
-      kind: "country",
-      alpha2,
-      displayName,
-      latitude: centroid?.latitude ?? null,
-      longitude: centroid?.longitude ?? null,
-    };
-  },
-);
+  return {
+    id: toCountryId(alpha2),
+    kind: "country",
+    alpha2,
+    displayName,
+    latitude: centroid?.latitude ?? null,
+    longitude: centroid?.longitude ?? null,
+  };
+});
 
-export const countryGroups: readonly CountryGroup[] =
-  countryGroupSourceRecords.map(({ id, displayName }) => ({
+export const countryGroups: readonly CountryGroup[] = countryGroupSourceRecords.map(
+  ({ id, displayName }) => ({
     id,
     kind: "country-group",
     displayName,
     memberCountryIds: memberCountryIdsFor(3, id),
-  }));
+  }),
+);
 
 export const continents: readonly Continent[] = continentSourceRecords.map(
   ({ id, displayName }) => ({
@@ -74,11 +69,7 @@ export const continents: readonly Continent[] = continentSourceRecords.map(
   }),
 );
 
-export const regions: readonly Region[] = [
-  ...countries,
-  ...countryGroups,
-  ...continents,
-];
+export const regions: readonly Region[] = [...countries, ...countryGroups, ...continents];
 
 export const regionById: ReadonlyMap<RegionId, Region> = new Map(
   regions.map((region) => [region.id, region]),
@@ -88,11 +79,8 @@ export const countryById: ReadonlyMap<CountryId, Country> = new Map(
   countries.map((country) => [country.id, country]),
 );
 
-export const getRegionById = (id: RegionId): Region | undefined =>
-  regionById.get(id);
+export const getRegionById = (id: RegionId): Region | undefined => regionById.get(id);
 
-export const getCountryById = (id: CountryId): Country | undefined =>
-  countryById.get(id);
+export const getCountryById = (id: CountryId): Country | undefined => countryById.get(id);
 
-export const isRegionId = (value: string): value is RegionId =>
-  regionById.has(value as RegionId);
+export const isRegionId = (value: string): value is RegionId => regionById.has(value as RegionId);

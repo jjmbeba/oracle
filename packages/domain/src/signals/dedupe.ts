@@ -63,7 +63,8 @@ const requireCanonicalKeyPart = (name: string, value: string): string => {
 const encodeKeyPart = (value: string): string => encodeURIComponent(value).replaceAll("%20", "+");
 
 const canonicalizeFingerprintParts = (parts: readonly string[]): string[] => {
-  const canonicalParts = parts.map((part) => requireCanonicalKeyPart("fingerprint parts", part))
+  const canonicalParts = parts
+    .map((part) => requireCanonicalKeyPart("fingerprint parts", part))
     .sort();
 
   if (canonicalParts.length < 2) {
@@ -120,7 +121,10 @@ export const createSignalDedupeMetadata = (input: SignalDedupeInput): SignalDedu
   }
 
   if (input.strategy === "provider-derived") {
-    const providerDerivedId = requireCanonicalKeyPart("provider derived ID", input.providerDerivedId);
+    const providerDerivedId = requireCanonicalKeyPart(
+      "provider derived ID",
+      input.providerDerivedId,
+    );
 
     return {
       dedupeKey: buildProviderDedupeKey(

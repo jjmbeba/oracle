@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createWorkerLogger } from "./logger";
+import { createWorkerLogger, serializeError } from "./logger";
 
 describe("worker logger", () => {
   it("emits parseable JSON records with stable fields", () => {
@@ -10,8 +10,11 @@ describe("worker logger", () => {
         info(message) {
           messages.push(message);
         },
-        error(message) {
-          messages.push(message);
+        warn() {
+          return;
+        },
+        error() {
+          return;
         },
       },
       now: () => new Date("2026-06-08T00:00:00.000Z"),
@@ -34,11 +37,55 @@ describe("worker logger", () => {
     });
   });
 
+  it("emits warn records at warn level", () => {
+    const messages: string[] = [];
+
+    const logger = createWorkerLogger({
+      sink: {
+        info() {
+          return;
+        },
+        warn(message) {
+          messages.push(message);
+        },
+        error() {
+          return;
+        },
+      },
+      now: () => new Date("2026-06-08T00:00:00.000Z"),
+    });
+
+    logger.warn("openweather.normalize.rejected", {
+      jobName: "openweather-ingestion",
+      metadata: {
+        providerEventId: "1234567",
+        reason: "schema-validation",
+        issues: [{ path: "tags", message: "Required" }],
+      },
+    });
+
+    expect(JSON.parse(messages[0] ?? "")).toEqual({
+      timestamp: "2026-06-08T00:00:00.000Z",
+      level: "warn",
+      service: "worker",
+      event: "openweather.normalize.rejected",
+      jobName: "openweather-ingestion",
+      metadata: {
+        providerEventId: "1234567",
+        reason: "schema-validation",
+        issues: [{ path: "tags", message: "Required" }],
+      },
+    });
+  });
+
   it("serializes errors predictably", () => {
     const errors: string[] = [];
     const logger = createWorkerLogger({
       sink: {
         info() {
+          return;
+        },
+        warn() {
           return;
         },
         error(message) {
@@ -66,12 +113,79 @@ describe("worker logger", () => {
     });
   });
 
+  it("serializes attached url, errorLabel, and status from fetch errors", () => {
+    const errors: string[] = [];
+    const logger = createWorkerLogger({
+      sink: {
+        info() {
+          return;
+        },
+        warn() {
+          return;
+        },
+        error(message) {
+          errors.push(message);
+        },
+      },
+      now: () => new Date("2026-06-08T00:00:00.000Z"),
+    });
+
+    const fetchError = new TypeError("fetch failed");
+    Object.assign(fetchError, {
+      url: "https://api.openweathermap.org/data/4.0/onecall/alert/abc?appid=k",
+      errorLabel: "OpenWeather API",
+      status: undefined,
+    });
+
+    logger.error("openweather.fetch.failed", {
+      jobName: "openweather-ingestion",
+      error: fetchError,
+    });
+
+    expect(JSON.parse(errors[0] ?? "")).toMatchObject({
+      level: "error",
+      event: "openweather.fetch.failed",
+      error: {
+        name: "TypeError",
+        message: "fetch failed",
+        url: "https://api.openweathermap.org/data/4.0/onecall/alert/abc?appid=k",
+        errorLabel: "OpenWeather API",
+      },
+    });
+  });
+
+  it("serializes attached status for HTTP errors", () => {
+    const serialized = serializeError(
+      (() => {
+        const err = new Error("OpenWeather API returned 401 Unauthorized for https://x");
+        Object.assign(err, { url: "https://x", errorLabel: "OpenWeather API", status: 401 });
+        return err;
+      })(),
+    );
+
+    expect(serialized.status).toBe(401);
+    expect(serialized.url).toBe("https://x");
+    expect(serialized.errorLabel).toBe("OpenWeather API");
+  });
+
+  it("ignores non-string url/errorLabel and non-number status when serializing", () => {
+    const err = new Error("boom");
+    Object.assign(err, { url: 123, errorLabel: null, status: "500" });
+    const serialized = serializeError(err);
+    expect(serialized.url).toBeUndefined();
+    expect(serialized.errorLabel).toBeUndefined();
+    expect(serialized.status).toBeUndefined();
+  });
+
   it("sanitizes circular metadata", () => {
     const messages: string[] = [];
     const logger = createWorkerLogger({
       sink: {
         info(message) {
           messages.push(message);
+        },
+        warn() {
+          return;
         },
         error() {
           return;
@@ -99,6 +213,9 @@ describe("worker logger", () => {
         info(message) {
           messages.push(message);
         },
+        warn() {
+          return;
+        },
         error() {
           return;
         },
@@ -125,6 +242,9 @@ describe("worker logger", () => {
       sink: {
         info(message) {
           messages.push(message);
+        },
+        warn() {
+          return;
         },
         error() {
           return;

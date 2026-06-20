@@ -20,7 +20,12 @@ for (const record of countryFactRecords) {
     record;
 
   const parseList = (raw: string | null): string[] | null =>
-    raw === null ? null : raw.split(", ").map((s) => s.trim()).filter(Boolean);
+    raw === null
+      ? null
+      : raw
+          .split(", ")
+          .map((s) => s.trim())
+          .filter(Boolean);
 
   factsByAlpha2.set(alpha2, {
     capital,
@@ -160,4 +165,3 @@ export const getRegionDossier = (regionId: RegionId): RegionDossier | null => {
     factSources: COMMON_SOURCES,
   };
 };
-

@@ -1,9 +1,12 @@
-export type LogLevel = "info" | "error";
+export type LogLevel = "info" | "warn" | "error";
 
 export type SerializedError = {
   name: string;
   message: string;
   stack?: string;
+  url?: string;
+  errorLabel?: string;
+  status?: number;
 };
 
 export type WorkerLogFields = {
@@ -26,11 +29,13 @@ export type WorkerLogRecord = {
 
 type ConsoleSink = {
   info(message: string): void;
+  warn(message: string): void;
   error(message: string): void;
 };
 
 export type WorkerLogger = {
   info(event: string, fields?: WorkerLogFields): void;
+  warn(event: string, fields?: WorkerLogFields): void;
   error(event: string, fields?: WorkerLogFields): void;
 };
 
@@ -58,12 +63,20 @@ export function createWorkerLogger(options: WorkerLoggerOptions = {}): WorkerLog
       return;
     }
 
+    if (level === "warn") {
+      sink.warn(message);
+      return;
+    }
+
     sink.info(message);
   };
 
   return {
     info(event, fields) {
       write("info", event, fields);
+    },
+    warn(event, fields) {
+      write("warn", event, fields);
     },
     error(event, fields) {
       write("error", event, fields);
@@ -94,18 +107,23 @@ function copyDefinedFields(fields: WorkerLogFields): Partial<WorkerLogRecord> {
 }
 
 export function serializeError(error: unknown): SerializedError {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+  const base: SerializedError =
+    error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : { name: "NonError", message: String(error) };
+
+  if (typeof error === "object" && error !== null) {
+    const { url, errorLabel, status } = error as {
+      url?: unknown;
+      errorLabel?: unknown;
+      status?: unknown;
     };
+    if (typeof url === "string") base.url = url;
+    if (typeof errorLabel === "string") base.errorLabel = errorLabel;
+    if (typeof status === "number") base.status = status;
   }
 
-  return {
-    name: "NonError",
-    message: String(error),
-  };
+  return base;
 }
 
 export function sanitizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {

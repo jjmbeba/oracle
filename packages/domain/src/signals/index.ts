@@ -18,12 +18,12 @@ export {
   signalSeveritySchema,
   signalSourceLinkSchema,
 } from "./schemas";
+export type { NormalizedSignal, SignalGeometry, SignalScope, SignalSourceLink } from "./schemas";
 export type {
-  NormalizedSignal,
-  SignalGeometry,
-  SignalScope,
-  SignalSourceLink,
-} from "./schemas";
+  NormalizedRejection,
+  NormalizedRejectionIssue,
+  NormalizedRejectionReason,
+} from "./rejection";
 export {
   signalCategories,
   signalCategoryLabels,
@@ -34,9 +34,4 @@ export {
   signalSeverities,
   signalSeverityLabels,
 } from "./values";
-export type {
-  SignalCategory,
-  SignalConfidence,
-  SignalScopeKind,
-  SignalSeverity,
-} from "./values";
+export type { SignalCategory, SignalConfidence, SignalScopeKind, SignalSeverity } from "./values";

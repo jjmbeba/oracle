@@ -21,7 +21,7 @@ import {
 import type { SignalCategory } from "./features/signals/types";
 
 const { selectedRegion, selectRegion, clearSelectedRegion, selectFromPoint } = useSelectedRegion();
-const activeCategories = ref<SignalCategory[]>(["earthquake", "space-weather"]);
+const activeCategories = ref<SignalCategory[]>(["earthquake", "weather", "space-weather"]);
 
 const { healthState, healthLabel } = useApiHealthStatus();
 const { authState, initialize } = useAnonymousSession();

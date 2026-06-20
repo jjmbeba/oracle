@@ -34,7 +34,7 @@ function createTestLogger() {
 const testDbEnv = { DATABASE_URL: "postgresql://localhost:5432/test" };
 
 describe("worker runtime", () => {
-  it("registers the usgs and swpc ingestion jobs and logs startup", () => {
+  it("registers the usgs, swpc, and openweather ingestion jobs and logs startup", () => {
     const { logger, records } = createTestLogger();
     const scheduler: Scheduler = {
       registerIntervalJob: vi.fn(),
@@ -46,13 +46,15 @@ describe("worker runtime", () => {
         ...testDbEnv,
         USGS_POLL_INTERVAL_MS: "300000",
         SWPC_POLL_INTERVAL_MS: "600000",
+        OPENWEATHER_POLL_INTERVAL_MS: "600000",
+        OPENWEATHER_API_KEY: "test-key",
       },
       logger,
       scheduler,
       signals: new SignalEmitter(),
     });
 
-    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(2);
+    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(3);
     expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -67,15 +69,42 @@ describe("worker runtime", () => {
         intervalMs: 600000,
       }),
     );
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        name: "openweather-ingestion",
+        intervalMs: 600000,
+      }),
+    );
     expect(records).toEqual([
       {
         event: "worker.started",
         metadata: {
           usgsPollIntervalMs: 300000,
           swpcPollIntervalMs: 600000,
+          openweatherPollIntervalMs: 600000,
+          openweatherApiKeyConfigured: true,
         },
       },
     ]);
+  });
+
+  it("logs openweatherApiKeyConfigured as false when the key is missing", () => {
+    const { logger, records } = createTestLogger();
+    const scheduler: Scheduler = {
+      registerIntervalJob: vi.fn(),
+      stop: vi.fn(),
+    };
+
+    startWorker({
+      env: testDbEnv,
+      logger,
+      scheduler,
+      signals: new SignalEmitter(),
+    });
+
+    const started = records.find((r) => r.event === "worker.started");
+    expect(started?.metadata?.openweatherApiKeyConfigured).toBe(false);
   });
 
   it("stops the scheduler and logs direct shutdown lifecycle", async () => {

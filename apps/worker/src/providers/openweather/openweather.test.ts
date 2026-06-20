@@ -3,6 +3,7 @@ import {
   openweatherTagToSeverity,
   deriveOpenweatherTitle,
   normalizeOpenweatherAlert,
+  normalizeOpenweatherResponse,
 } from "./normalizer";
 import brazilFixture from "./__fixtures__/alert-brazil.json";
 import germanyFixture from "./__fixtures__/alert-germany.json";
@@ -127,7 +128,9 @@ describe("deriveOpenweatherTitle", () => {
 
 describe("normalizeOpenweatherAlert", () => {
   it("normalizes Brazil alert (event blank, pt-BR description, Wind tag)", () => {
-    const signal = normalizeOpenweatherAlert(brazilFixture, BRAZIL_COORDS);
+    const { signal, rejection } = normalizeOpenweatherAlert(brazilFixture, BRAZIL_COORDS);
+    expect(rejection).toBeNull();
+
     expect(signal).not.toBeNull();
 
     expect(signal!.provider).toBe("openweather");
@@ -143,7 +146,9 @@ describe("normalizeOpenweatherAlert", () => {
   });
 
   it("normalizes Germany alert (event blank, en description, Thunderstorm+Wind tags)", () => {
-    const signal = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
+    const { signal, rejection } = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
+    expect(rejection).toBeNull();
+
     expect(signal).not.toBeNull();
 
     expect(signal!.provider).toBe("openweather");
@@ -158,7 +163,9 @@ describe("normalizeOpenweatherAlert", () => {
   });
 
   it("normalizes USA alert (non-blank event, Flood tag)", () => {
-    const signal = normalizeOpenweatherAlert(usaFixture, USA_COORDS);
+    const { signal, rejection } = normalizeOpenweatherAlert(usaFixture, USA_COORDS);
+    expect(rejection).toBeNull();
+
     expect(signal).not.toBeNull();
 
     expect(signal!.provider).toBe("openweather");
@@ -173,44 +180,177 @@ describe("normalizeOpenweatherAlert", () => {
   });
 
   it("includes timestamps as round-trippable ISO strings", () => {
-    const signal = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
+    const { signal } = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
     expect(signal).not.toBeNull();
     expect(new Date(signal!.effectiveAt).toISOString()).toBe(signal!.effectiveAt);
   });
 
   it("uses start epoch seconds for effectiveAt", () => {
-    const signal = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
+    const { signal } = normalizeOpenweatherAlert(germanyFixture, GERMANY_COORDS);
     expect(signal).not.toBeNull();
     const start = (germanyFixture as { start: number }).start;
     expect(signal!.effectiveAt).toBe(new Date(start * 1000).toISOString());
   });
 
   it("builds correct dedupe key from alert id", () => {
-    const signal = normalizeOpenweatherAlert(brazilFixture, BRAZIL_COORDS);
+    const { signal } = normalizeOpenweatherAlert(brazilFixture, BRAZIL_COORDS);
     expect(signal).not.toBeNull();
     expect(signal!.dedupeKey).toBe("signal:weather:openweather:provider-native:1234567");
     expect(signal!.providerEventId).toBe("1234567");
   });
 
-  it("returns null for malformed input (missing id)", () => {
+  it("returns a rejection for malformed input (missing id)", () => {
     const { id: _, ...rest } = brazilFixture as Record<string, unknown>;
-    expect(normalizeOpenweatherAlert(rest, BRAZIL_COORDS)).toBeNull();
+    const { signal, rejection } = normalizeOpenweatherAlert(rest, BRAZIL_COORDS);
+    expect(signal).toBeNull();
+    expect(rejection).not.toBeNull();
+    expect(rejection!.providerEventId).toBe("unknown");
+    expect(rejection!.reason).toBe("schema-validation");
+    expect(rejection!.issues?.map((i) => i.path)).toContain("id");
   });
 
-  it("returns null for non-object input", () => {
-    expect(normalizeOpenweatherAlert("not an object", BRAZIL_COORDS)).toBeNull();
-    expect(normalizeOpenweatherAlert(null, BRAZIL_COORDS)).toBeNull();
-    expect(normalizeOpenweatherAlert(42, BRAZIL_COORDS)).toBeNull();
+  it("returns a rejection for non-object input", () => {
+    expect(normalizeOpenweatherAlert("not an object", BRAZIL_COORDS)).toEqual({
+      signal: null,
+      rejection: expect.objectContaining({ reason: "schema-validation" }),
+    });
+    expect(normalizeOpenweatherAlert(null, BRAZIL_COORDS)).toEqual({
+      signal: null,
+      rejection: expect.objectContaining({ reason: "schema-validation" }),
+    });
+    expect(normalizeOpenweatherAlert(42, BRAZIL_COORDS)).toEqual({
+      signal: null,
+      rejection: expect.objectContaining({ reason: "schema-validation" }),
+    });
   });
 
-  it("returns null for input with missing start", () => {
+  it("returns a rejection with a captured alert id even when full validation fails", () => {
+    const { signal, rejection } = normalizeOpenweatherAlert({ id: 1234567 }, BRAZIL_COORDS);
+    expect(signal).toBeNull();
+    expect(rejection).not.toBeNull();
+    expect(rejection!.providerEventId).toBe("1234567");
+    expect(rejection!.reason).toBe("schema-validation");
+    expect(rejection!.issues?.map((i) => i.path)).toEqual(
+      expect.arrayContaining(["sender_name", "event", "start", "end", "description", "tags"]),
+    );
+  });
+
+  it("returns a rejection for input with missing start", () => {
     const { start: _, ...rest } = brazilFixture as Record<string, unknown>;
-    expect(normalizeOpenweatherAlert(rest, BRAZIL_COORDS)).toBeNull();
+    const { signal, rejection } = normalizeOpenweatherAlert(rest, BRAZIL_COORDS);
+    expect(signal).toBeNull();
+    expect(rejection).not.toBeNull();
+    expect(rejection!.reason).toBe("schema-validation");
+    expect(rejection!.issues?.map((i) => i.path)).toContain("start");
   });
 
-  it("returns null for invalid coordinates", () => {
-    const signal = normalizeOpenweatherAlert(brazilFixture, [200, 91]);
+  it("returns a rejection with reason schema-validation when start is not a number", () => {
+    const payload = { ...brazilFixture, start: "not-a-number" };
+    const { signal, rejection } = normalizeOpenweatherAlert(payload, BRAZIL_COORDS);
+    expect(signal).toBeNull();
+    expect(rejection).not.toBeNull();
+    expect(rejection!.reason).toBe("schema-validation");
+  });
+
+  it("accepts out-of-range coordinates without rejection", () => {
+    const { signal, rejection } = normalizeOpenweatherAlert(brazilFixture, [200, 91]);
+    expect(rejection).toBeNull();
     expect(signal).not.toBeNull();
     expect(signal!.scope).toEqual({ kind: "point", coordinates: [200, 91] });
+  });
+
+  it("accepts description entries where locale is undefined (live OpenWeather shape)", () => {
+    const liveShape = {
+      id: "VPWW54_JPTK_201820_02_202606201820170_001_38697:14:1311500:0:0:bd980f52b5594645c6a36b4016fdd359",
+      sender_name: "Japan Meteorological Agency",
+      event: "",
+      start: 1750000000,
+      end: 1750086400,
+      description: [
+        {
+          description: "Some warning text",
+        },
+      ],
+      tags: ["Wind"],
+    };
+
+    const { signal, rejection } = normalizeOpenweatherAlert(liveShape, BRAZIL_COORDS);
+    expect(rejection).toBeNull();
+    expect(signal).not.toBeNull();
+    expect(signal!.providerEventId).toBe(liveShape.id);
+    expect(signal!.title).toBe("Wind Alert");
+  });
+
+  it("falls back to Weather Alert when all description entries have no text", () => {
+    const payload = {
+      id: 1234,
+      sender_name: "Test",
+      event: "",
+      start: 1750000000,
+      end: 1750086400,
+      description: [{ locale: "en" }, { description: "   " }],
+      tags: [],
+    };
+
+    const { signal, rejection } = normalizeOpenweatherAlert(payload, BRAZIL_COORDS);
+    expect(rejection).toBeNull();
+    expect(signal).not.toBeNull();
+    expect(signal!.title).toBe("Weather Alert");
+  });
+});
+
+describe("normalizeOpenweatherResponse", () => {
+  it("normalizes a payload of fetched alerts with their coordinates", () => {
+    const input = {
+      alerts: [
+        { coordinates: BRAZIL_COORDS, payload: brazilFixture },
+        { coordinates: GERMANY_COORDS, payload: germanyFixture },
+      ],
+    };
+
+    const { signals, skipped } = normalizeOpenweatherResponse(input);
+
+    expect(signals).toHaveLength(2);
+    expect(skipped).toHaveLength(0);
+
+    expect(signals[0]!.provider).toBe("openweather");
+    expect(signals[0]!.category).toBe("weather");
+    expect(signals[0]!.scope).toEqual({ kind: "point", coordinates: BRAZIL_COORDS });
+    expect(signals[0]!.title).toBe("Wind Alert");
+
+    expect(signals[1]!.scope).toEqual({ kind: "point", coordinates: GERMANY_COORDS });
+    expect(signals[1]!.title).toBe("Thunderstorm, Wind Alert");
+  });
+
+  it("throws on non-payload input", () => {
+    expect(() => normalizeOpenweatherResponse(null)).toThrow();
+    expect(() => normalizeOpenweatherResponse("not an object")).toThrow();
+    expect(() => normalizeOpenweatherResponse({ unrelated: true })).toThrow();
+  });
+
+  it("captures alert id and issues for entries whose payload fails alert-detail validation", () => {
+    const input = {
+      alerts: [
+        { coordinates: BRAZIL_COORDS, payload: brazilFixture },
+        { coordinates: GERMANY_COORDS, payload: { id: "broken" } },
+      ],
+    };
+
+    const { signals, skipped } = normalizeOpenweatherResponse(input);
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]!.title).toBe("Wind Alert");
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]!.providerEventId).toBe("broken");
+    expect(skipped[0]!.reason).toBe("schema-validation");
+    expect(skipped[0]!.issues?.map((i) => i.path)).toEqual(
+      expect.arrayContaining(["sender_name", "event", "start", "end", "description", "tags"]),
+    );
+  });
+
+  it("returns empty signals when the alerts list is empty", () => {
+    const { signals, skipped } = normalizeOpenweatherResponse({ alerts: [] });
+    expect(signals).toEqual([]);
+    expect(skipped).toEqual([]);
   });
 });

@@ -52,7 +52,7 @@ describe("fetchSwpcAlerts", () => {
     } as Response);
 
     await expect(fetchSwpcAlerts(mockFetch)).rejects.toThrow(
-      "SWPC API returned 500: Internal Server Error",
+      "SWPC API returned 500 Internal Server Error for",
     );
   });
 });

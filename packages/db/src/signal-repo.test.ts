@@ -4,7 +4,13 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { NormalizedSignal } from "@oracle/domain";
 import { createDatabaseConnection } from "./index";
 import { signal } from "./signal-schema";
-import { upsertSignal, querySignals, querySignalFeed, upsertProviderFreshness, queryProviderFreshness } from "./signal-repo";
+import {
+  upsertSignal,
+  querySignals,
+  querySignalFeed,
+  upsertProviderFreshness,
+  queryProviderFreshness,
+} from "./signal-repo";
 import type { schema } from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -98,9 +104,7 @@ describe("signal repo", () => {
         .from(signal)
         .where(eq(signal.dedupeKey, dedupeKey));
 
-      expect(after.updatedAt.getTime()).toBeGreaterThan(
-        before.updatedAt.getTime(),
-      );
+      expect(after.updatedAt.getTime()).toBeGreaterThan(before.updatedAt.getTime());
     });
 
     itIfDb("creates separate rows for different dedupe keys", async () => {
@@ -132,7 +136,15 @@ describe("signal repo", () => {
           kind: "geometry" as const,
           geometry: {
             type: "Polygon" as const,
-            coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
           },
         },
       ];
@@ -297,58 +309,77 @@ describe("signal repo", () => {
 
   describe("querySignalFeed", () => {
     itIfDb("orders by severity priority then recency", async () => {
-      const ts = (h: number) => new Date(`2026-06-18T${h.toString().padStart(2, "0")}:00:00Z`).toISOString();
+      const ts = (h: number) =>
+        new Date(`2026-06-18T${h.toString().padStart(2, "0")}:00:00Z`).toISOString();
       const uuid = () => crypto.randomUUID();
 
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf:ext-${uuid()}`,
-        title: "Extreme",
-        severity: "extreme",
-        effectiveAt: ts(10),
-      }));
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf:sev-${uuid()}`,
-        title: "Severe",
-        severity: "severe",
-        effectiveAt: ts(11),
-      }));
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf:mod-e-${uuid()}`,
-        title: "Moderate Early",
-        severity: "moderate",
-        effectiveAt: ts(9),
-      }));
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf:mod-l-${uuid()}`,
-        title: "Moderate Late",
-        severity: "moderate",
-        effectiveAt: ts(12),
-      }));
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf:ext-${uuid()}`,
+          title: "Extreme",
+          severity: "extreme",
+          effectiveAt: ts(10),
+        }),
+      );
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf:sev-${uuid()}`,
+          title: "Severe",
+          severity: "severe",
+          effectiveAt: ts(11),
+        }),
+      );
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf:mod-e-${uuid()}`,
+          title: "Moderate Early",
+          severity: "moderate",
+          effectiveAt: ts(9),
+        }),
+      );
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf:mod-l-${uuid()}`,
+          title: "Moderate Late",
+          severity: "moderate",
+          effectiveAt: ts(12),
+        }),
+      );
 
       const results = await querySignalFeed(db, {
         category: "earthquake",
         since: new Date("2026-06-01"),
       });
 
-      const titles = results.filter((s) =>
-        ["Extreme", "Severe", "Moderate Early", "Moderate Late"].includes(s.title),
-      ).map((s) => s.title);
+      const titles = results
+        .filter((s) => ["Extreme", "Severe", "Moderate Early", "Moderate Late"].includes(s.title))
+        .map((s) => s.title);
 
       expect(titles).toEqual(["Extreme", "Severe", "Moderate Late", "Moderate Early"]);
     });
 
     itIfDb("filters by category", async () => {
       const uuid = () => crypto.randomUUID();
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf-cat-eq-${uuid()}`,
-        title: "Earthquake",
-        category: "earthquake",
-      }));
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf-cat-wx-${uuid()}`,
-        title: "Weather",
-        category: "weather",
-      }));
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf-cat-eq-${uuid()}`,
+          title: "Earthquake",
+          category: "earthquake",
+        }),
+      );
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf-cat-wx-${uuid()}`,
+          title: "Weather",
+          category: "weather",
+        }),
+      );
 
       const results = await querySignalFeed(db, {
         category: "weather",
@@ -361,16 +392,22 @@ describe("signal repo", () => {
 
     itIfDb("respects the since window", async () => {
       const uuid = () => crypto.randomUUID();
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf-win-recent-${uuid()}`,
-        title: "Recent",
-        effectiveAt: new Date().toISOString(),
-      }));
-      await upsertSignal(db, makeSignal({
-        dedupeKey: `sf-win-old-${uuid()}`,
-        title: "Old",
-        effectiveAt: new Date("2020-01-01").toISOString(),
-      }));
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf-win-recent-${uuid()}`,
+          title: "Recent",
+          effectiveAt: new Date().toISOString(),
+        }),
+      );
+      await upsertSignal(
+        db,
+        makeSignal({
+          dedupeKey: `sf-win-old-${uuid()}`,
+          title: "Old",
+          effectiveAt: new Date("2020-01-01").toISOString(),
+        }),
+      );
 
       const results = await querySignalFeed(db, {
         category: "earthquake",
@@ -395,9 +432,7 @@ describe("signal repo", () => {
       expect(read).not.toBeNull();
       expect(read!.provider).toBe("usgs");
       expect(read!.category).toBe("earthquake");
-      expect(read!.lastSuccessfulPollAt.toISOString()).toBe(
-        "2026-06-01T12:00:00.000Z",
-      );
+      expect(read!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-01T12:00:00.000Z");
     });
 
     itIfDb("updates existing freshness on conflict", async () => {
@@ -414,9 +449,7 @@ describe("signal repo", () => {
       });
 
       const read = await queryProviderFreshness(db, "openweather", "weather");
-      expect(read!.lastSuccessfulPollAt.toISOString()).toBe(
-        "2026-06-15T00:00:00.000Z",
-      );
+      expect(read!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-15T00:00:00.000Z");
     });
 
     itIfDb("returns null for unknown provider or category", async () => {

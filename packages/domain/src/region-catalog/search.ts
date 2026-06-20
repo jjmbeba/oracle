@@ -29,8 +29,7 @@ const defaultRegionIds = [
   "continent:asia",
 ] as const satisfies readonly RegionId[];
 
-const normalizeSearchValue = (value: string): string =>
-  value.trim().toLowerCase();
+const normalizeSearchValue = (value: string): string => value.trim().toLowerCase();
 
 export const toRegionSearchResult = (region: Region): RegionSearchResult => {
   if (region.kind === "country") {
@@ -59,17 +58,11 @@ const matchRank = (region: Region, normalizedQuery: string): number => {
     return 0;
   }
 
-  if (
-    normalizedName.startsWith(normalizedQuery) ||
-    normalizedId.startsWith(normalizedQuery)
-  ) {
+  if (normalizedName.startsWith(normalizedQuery) || normalizedId.startsWith(normalizedQuery)) {
     return 1;
   }
 
-  if (
-    normalizedName.includes(normalizedQuery) ||
-    normalizedId.includes(normalizedQuery)
-  ) {
+  if (normalizedName.includes(normalizedQuery) || normalizedId.includes(normalizedQuery)) {
     return 2;
   }
 
