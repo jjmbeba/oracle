@@ -196,15 +196,12 @@ export function normalizeOpenweatherResponse(input: unknown): {
   signals: NormalizedSignal[];
   skipped: NormalizedRejection[];
 } {
-  const parsed = openweatherFetchPayloadSchema.safeParse(input);
-  if (!parsed.success) {
-    return { signals: [], skipped: [] };
-  }
+  const parsed = openweatherFetchPayloadSchema.parse(input);
 
   const signals: NormalizedSignal[] = [];
   const skipped: NormalizedRejection[] = [];
 
-  for (const entry of parsed.data.alerts) {
+  for (const entry of parsed.alerts) {
     const { signal, rejection } = normalizeOpenweatherAlert(entry.payload, entry.coordinates);
     if (signal) {
       signals.push(signal);

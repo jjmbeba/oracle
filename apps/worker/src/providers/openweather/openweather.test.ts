@@ -244,7 +244,7 @@ describe("normalizeOpenweatherAlert", () => {
     expect(rejection!.issues?.map((i) => i.path)).toContain("start");
   });
 
-  it("returns a rejection with reason invalid-date when start is not a number", () => {
+  it("returns a rejection with reason schema-validation when start is not a number", () => {
     const payload = { ...brazilFixture, start: "not-a-number" };
     const { signal, rejection } = normalizeOpenweatherAlert(payload, BRAZIL_COORDS);
     expect(signal).toBeNull();
@@ -322,14 +322,10 @@ describe("normalizeOpenweatherResponse", () => {
     expect(signals[1]!.title).toBe("Thunderstorm, Wind Alert");
   });
 
-  it("returns empty arrays when input is not the expected payload shape", () => {
-    expect(normalizeOpenweatherResponse(null)).toEqual({ signals: [], skipped: [] });
-    expect(normalizeOpenweatherResponse("not an object")).toEqual({ signals: [], skipped: [] });
-    expect(normalizeOpenweatherResponse({ unrelated: true })).toEqual({ signals: [], skipped: [] });
-    expect(normalizeOpenweatherResponse({ alerts: "not-an-array" })).toEqual({
-      signals: [],
-      skipped: [],
-    });
+  it("throws on non-payload input", () => {
+    expect(() => normalizeOpenweatherResponse(null)).toThrow();
+    expect(() => normalizeOpenweatherResponse("not an object")).toThrow();
+    expect(() => normalizeOpenweatherResponse({ unrelated: true })).toThrow();
   });
 
   it("captures alert id and issues for entries whose payload fails alert-detail validation", () => {

@@ -17,6 +17,9 @@ function createTestLogger(): { records: LogRecord[]; logger: WorkerLogger } {
       info(event: string, fields: Record<string, unknown> = {}) {
         records.push({ event, ...fields });
       },
+      warn(event: string, fields: Record<string, unknown> = {}) {
+        records.push({ event, ...fields });
+      },
       error(event: string, fields: Record<string, unknown> = {}) {
         records.push({ event, ...fields });
       },
@@ -66,7 +69,11 @@ describe("openweather ingestion job", () => {
 
   it("uses the factory with OpenWeather config and default interval", () => {
     const { logger } = createTestLogger();
-    const job = createOpenweatherIngestionJob({ db: mockDb, logger });
+    const job = createOpenweatherIngestionJob({
+      db: mockDb,
+      logger,
+      env: { OPENWEATHER_API_KEY: "test-key" },
+    });
 
     expect(job.name).toBe("openweather-ingestion");
     expect(job.intervalMs).toBe(600_000);
@@ -88,7 +95,10 @@ describe("openweather ingestion job", () => {
     const job = createOpenweatherIngestionJob({
       db: mockDb,
       logger,
-      env: { OPENWEATHER_POLL_INTERVAL_MS: "120000" },
+      env: {
+        OPENWEATHER_API_KEY: "test-key",
+        OPENWEATHER_POLL_INTERVAL_MS: "120000",
+      },
     });
 
     expect(job.intervalMs).toBe(120_000);
@@ -114,12 +124,30 @@ describe("openweather ingestion job", () => {
 
   it("normalizes fetched data through the OpenWeather response normalizer", async () => {
     const { logger } = createTestLogger();
-    createOpenweatherIngestionJob({ db: mockDb, logger });
+    createOpenweatherIngestionJob({
+      db: mockDb,
+      logger,
+      env: { OPENWEATHER_API_KEY: "test-key" },
+    });
 
     const config = vi.mocked(mockedCreateIngestionJob).mock.calls[0]![0];
     const result = config.normalize({ alerts: [] });
 
     expect(normalizeOpenweatherResponse).toHaveBeenCalledWith({ alerts: [] });
     expect(result).toEqual({ signals: [], skipped: [] });
+  });
+
+  it("returns a no-op job when OPENWEATHER_API_KEY is missing", () => {
+    const { logger, records } = createTestLogger();
+    const job = createOpenweatherIngestionJob({ db: mockDb, logger });
+
+    expect(job.name).toBe("openweather-ingestion");
+    expect(job.intervalMs).toBe(600_000);
+    expect(mockedCreateIngestionJob).not.toHaveBeenCalled();
+
+    job.run();
+    expect(records).toContainEqual(
+      expect.objectContaining({ event: "openweather.skipped.no_api_key" }),
+    );
   });
 });
