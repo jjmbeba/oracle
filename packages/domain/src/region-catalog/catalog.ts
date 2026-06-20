@@ -1,3 +1,4 @@
+import { countryFactRecords } from "./source-country-facts";
 import { countrySourceRecords } from "./source-countries";
 import {
   continentSourceRecords,
@@ -17,6 +18,22 @@ import type {
 const toCountryId = (alpha2: string): CountryId =>
   `country:${alpha2.toLowerCase()}` as CountryId;
 
+const centroidByAlpha2 = new Map<string, { latitude: number; longitude: number }>();
+
+for (const [
+  alpha2,
+  _capital,
+  _population,
+  _languages,
+  _currencies,
+  latitude,
+  longitude,
+] of countryFactRecords) {
+  if (latitude !== null && longitude !== null) {
+    centroidByAlpha2.set(alpha2, { latitude, longitude });
+  }
+}
+
 const memberCountryIdsFor = (
   sourceIndex: 2 | 3,
   regionId: ContinentId | CountryGroupId,
@@ -26,12 +43,18 @@ const memberCountryIdsFor = (
     .map(([alpha2]) => toCountryId(alpha2));
 
 export const countries: readonly Country[] = countrySourceRecords.map(
-  ([alpha2, displayName]) => ({
-    id: toCountryId(alpha2),
-    kind: "country",
-    alpha2,
-    displayName,
-  }),
+  ([alpha2, displayName]) => {
+    const centroid = centroidByAlpha2.get(alpha2);
+
+    return {
+      id: toCountryId(alpha2),
+      kind: "country",
+      alpha2,
+      displayName,
+      latitude: centroid?.latitude ?? null,
+      longitude: centroid?.longitude ?? null,
+    };
+  },
 );
 
 export const countryGroups: readonly CountryGroup[] =

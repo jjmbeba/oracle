@@ -79,6 +79,22 @@ describe("region catalog", () => {
     expect(getCountryById("country:aq")?.displayName).toBe("Antarctica");
   });
 
+  it("attaches latitude and longitude to countries that have fact records", () => {
+    const kenya = getCountryById("country:ke");
+    expect(kenya?.latitude).toBeCloseTo(-1.29);
+    expect(kenya?.longitude).toBeCloseTo(36.82);
+
+    const japan = getCountryById("country:jp");
+    expect(japan?.latitude).toBeCloseTo(36.2);
+    expect(japan?.longitude).toBeCloseTo(138.25);
+
+    const totalsWithNullCentroid = countries.filter(
+      (c) => c.latitude === null || c.longitude === null,
+    );
+
+    expect(totalsWithNullCentroid.length).toBeLessThan(countries.length);
+  });
+
   it("keeps derived region indexes consistent", () => {
     expect(regions).toHaveLength(
       countries.length + countryGroups.length + continents.length,

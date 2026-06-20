@@ -50,7 +50,9 @@ describe("useAnonymousSession", () => {
 
   it("resolves unavailable when getSession throws", async () => {
     const client = mockClient({
-      getSession: async () => { throw new Error("network error"); },
+      getSession: async () => {
+        throw new Error("network error");
+      },
     });
 
     const { initialize, authState } = useAnonymousSession(client);
@@ -62,7 +64,9 @@ describe("useAnonymousSession", () => {
   it("resolves unavailable when signIn throws", async () => {
     const client = mockClient({
       signIn: {
-        anonymous: async () => { throw new Error("network error"); },
+        anonymous: async () => {
+          throw new Error("network error");
+        },
       },
     });
 

@@ -16,7 +16,7 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
-@use '../../styles/variables' as *;
+@use "../../styles/variables" as *;
 
 .navbar {
   display: flex;

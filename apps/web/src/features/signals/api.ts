@@ -1,5 +1,8 @@
 export const SIGNAL_FEED_PATH = "/api/signals/feed";
 
+import { isSignalCategory, isSignalSeverity } from "./types";
+import type { SignalCategory, SignalSeverity } from "./types";
+
 export type SignalFeedScope =
   | { readonly kind: "global" }
   | { readonly kind: "region"; readonly regionId: string }
@@ -14,9 +17,9 @@ export type SignalFeedScope =
 
 export type SignalFeedItem = {
   readonly provider: string;
-  readonly category: string;
+  readonly category: SignalCategory;
   readonly title: string;
-  readonly severity: string;
+  readonly severity: SignalSeverity;
   readonly confidence: string;
   readonly effectiveAt: string;
   readonly scope: SignalFeedScope;
@@ -69,19 +72,18 @@ function isSignalFeedItem(value: unknown): value is SignalFeedItem {
   if (!isRecord(value)) return false;
   if (
     typeof value.provider !== "string" ||
-    typeof value.category !== "string" ||
     typeof value.title !== "string" ||
-    typeof value.severity !== "string" ||
     typeof value.confidence !== "string" ||
     typeof value.effectiveAt !== "string"
-  ) return false;
+  )
+    return false;
+  if (!isSignalCategory(value.category)) return false;
+  if (!isSignalSeverity(value.severity)) return false;
   if (!isSignalFeedScope(value.scope)) return false;
   if (value.sourceLink !== undefined) {
     if (!isRecord(value.sourceLink) || typeof value.sourceLink.url !== "string") return false;
-    if (
-      value.sourceLink.label !== undefined &&
-      typeof value.sourceLink.label !== "string"
-    ) return false;
+    if (value.sourceLink.label !== undefined && typeof value.sourceLink.label !== "string")
+      return false;
   }
   return true;
 }
@@ -103,7 +105,7 @@ function isSignalFeedResponse(value: unknown): value is SignalFeedResponse {
 }
 
 export async function fetchSignalFeed(
-  category: string,
+  category: SignalCategory,
   fetcher: Fetcher = fetch,
 ): Promise<SignalFeedResponse> {
   const url = `${SIGNAL_FEED_PATH}?category=${encodeURIComponent(category)}`;

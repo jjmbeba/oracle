@@ -1,6 +1,7 @@
 import type { RegionSearchResult } from "../regions/api";
 
 export const WATCHED_REGIONS_PATH = "/api/watched-regions";
+export const MAX_WATCHED_REGIONS = 10;
 
 export type WatchedRegion = {
   readonly id: string;
@@ -31,7 +32,8 @@ function isRegionSearchResult(value: unknown): value is RegionSearchResult {
     typeof value.id !== "string" ||
     typeof value.displayName !== "string" ||
     typeof value.kind !== "string"
-  ) return false;
+  )
+    return false;
 
   if (value.kind === "country") return typeof value.alpha2 === "string";
   if (value.kind === "country-group" || value.kind === "continent") {
@@ -51,7 +53,8 @@ function isWatchedRegion(value: unknown): value is WatchedRegion {
     typeof value.id !== "string" ||
     typeof value.regionId !== "string" ||
     typeof value.createdAt !== "string"
-  ) return false;
+  )
+    return false;
   if (value.region !== null && !isRegionSearchResult(value.region)) return false;
   return true;
 }
@@ -125,10 +128,9 @@ export async function unwatchRegion(
   regionId: string,
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = apiFetch,
 ): Promise<void> {
-  const response = await fetcher(
-    `${WATCHED_REGIONS_PATH}/${encodeURIComponent(regionId)}`,
-    { method: "DELETE" },
-  );
+  const response = await fetcher(`${WATCHED_REGIONS_PATH}/${encodeURIComponent(regionId)}`, {
+    method: "DELETE",
+  });
 
   if (!response.ok) {
     const body: unknown = await safeJson(response);

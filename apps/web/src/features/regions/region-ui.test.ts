@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RegionSearchResult } from "./api";
-import {
-  getRegionKindLabel,
-  getRegionMetaLabel,
-  isRegionSelected,
-} from "./region-ui";
+import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected } from "./region-ui";
 
 const kenya: RegionSearchResult = {
   id: "country:ke",

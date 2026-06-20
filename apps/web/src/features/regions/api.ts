@@ -49,7 +49,12 @@ function isRegionSearchResult(value: unknown): value is RegionSearchResult {
   }
 
   if (value.kind === "country-group" || value.kind === "continent") {
-    return isStringArray(value.memberCountryIds) && typeof value.memberCount === "number" && Number.isInteger(value.memberCount) && value.memberCount >= 0;
+    return (
+      isStringArray(value.memberCountryIds) &&
+      typeof value.memberCount === "number" &&
+      Number.isInteger(value.memberCount) &&
+      value.memberCount >= 0
+    );
   }
 
   return false;
@@ -113,6 +118,8 @@ export type GroupDossierFacts = {
   readonly population: number | null;
   readonly languages: readonly string[];
   readonly currencies: readonly string[];
+  readonly latitude: number | null;
+  readonly longitude: number | null;
   readonly gdpPerCapita: number | null;
   readonly populationDensity: number | null;
 };
@@ -174,6 +181,8 @@ function isGroupDossierFacts(value: unknown): value is GroupDossierFacts {
     (value.population === null || typeof value.population === "number") &&
     isStringArray(value.languages) &&
     isStringArray(value.currencies) &&
+    (value.latitude === null || typeof value.latitude === "number") &&
+    (value.longitude === null || typeof value.longitude === "number") &&
     (value.gdpPerCapita === null || typeof value.gdpPerCapita === "number") &&
     (value.populationDensity === null || typeof value.populationDensity === "number")
   );

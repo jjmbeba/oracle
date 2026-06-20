@@ -82,6 +82,21 @@ describe("getRegionDossier", () => {
       expect(dossier.region.memberCount).toBe(7);
       expect(dossier.overviewFacts?.languages).toContain("Arabic");
     });
+
+    it("includes computed centroid for Eastern Africa", () => {
+      const dossier = getRegionDossier("group:eastern-africa");
+      expect(dossier).not.toBeNull();
+      if (!dossier || dossier.region.kind !== "country-group") return;
+      if (!dossier.overviewFacts) return;
+
+      const { latitude, longitude } = dossier.overviewFacts;
+      expect(latitude).not.toBeNull();
+      expect(longitude).not.toBeNull();
+      expect(latitude!).toBeGreaterThan(-15);
+      expect(latitude!).toBeLessThan(15);
+      expect(longitude!).toBeGreaterThan(25);
+      expect(longitude!).toBeLessThan(55);
+    });
   });
 
   describe("continents", () => {
@@ -102,6 +117,21 @@ describe("getRegionDossier", () => {
 
       expect(dossier.region.memberCount).toBeGreaterThan(30);
       expect(dossier.overviewFacts?.currencies).toContain("EUR");
+    });
+
+    it("includes computed centroid for Africa", () => {
+      const dossier = getRegionDossier("continent:africa");
+      expect(dossier).not.toBeNull();
+      if (!dossier || dossier.region.kind !== "continent") return;
+      if (!dossier.overviewFacts) return;
+
+      const { latitude, longitude } = dossier.overviewFacts;
+      expect(latitude).not.toBeNull();
+      expect(longitude).not.toBeNull();
+      expect(latitude!).toBeGreaterThan(-40);
+      expect(latitude!).toBeLessThan(40);
+      expect(longitude!).toBeGreaterThan(-25);
+      expect(longitude!).toBeLessThan(55);
     });
   });
 });

@@ -3,11 +3,7 @@ import { computed, ref } from "vue";
 import type { RegionSearchResult } from "../api";
 import type { WatchedRegion } from "../../watched-regions/api";
 import { useRegionSearchQuery } from "../queries";
-import {
-  getRegionKindLabel,
-  getRegionMetaLabel,
-  isRegionSelected,
-} from "../region-ui";
+import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected } from "../region-ui";
 
 const searchInput = ref("");
 const watchedOpen = ref(true);
@@ -21,9 +17,7 @@ const normalizedSearchInput = computed(() => searchInput.value.trim());
 const hasSearchText = computed(() => normalizedSearchInput.value.length > 0);
 const hasNoMatches = computed(
   () =>
-    hasSearchText.value &&
-    regionSearchQuery.isSuccess.value &&
-    searchResults.value.length === 0,
+    hasSearchText.value && regionSearchQuery.isSuccess.value && searchResults.value.length === 0,
 );
 
 const props = defineProps<{
@@ -80,11 +74,7 @@ function getWatchedKind(region: WatchedRegion): string {
 <template>
   <section class="search-panel" aria-labelledby="region-search-heading">
     <div v-if="watchedRegions.length > 0" class="watched-section">
-      <button
-        class="watched-header"
-        type="button"
-        @click="watchedOpen = !watchedOpen"
-      >
+      <button class="watched-header" type="button" @click="watchedOpen = !watchedOpen">
         <span class="watched-label">
           <span class="watched-count">Watched</span>
           <span class="watched-fraction">{{ watchedRegions.length }} / 10</span>
@@ -93,11 +83,7 @@ function getWatchedKind(region: WatchedRegion): string {
       </button>
 
       <div v-if="watchedOpen" class="watched-list">
-        <div
-          v-for="wr in watchedRegions"
-          :key="wr.id"
-          class="watched-item"
-        >
+        <div v-for="wr in watchedRegions" :key="wr.id" class="watched-item">
           <button
             class="watched-item-select"
             type="button"
@@ -142,34 +128,38 @@ function getWatchedKind(region: WatchedRegion): string {
     </form>
 
     <div aria-live="polite">
-      <p v-if="regionSearchQuery.isError.value" class="state-copy alert">Region search is temporarily unavailable.</p>
+      <p v-if="regionSearchQuery.isError.value" class="state-copy alert">
+        Region search is temporarily unavailable.
+      </p>
       <p v-else-if="hasNoMatches" class="state-copy">
         No supported region matches "{{ normalizedSearchInput }}".
       </p>
-      <p v-else-if="regionSearchQuery.isLoading.value" class="state-copy">Loading supported regions.</p>
+      <p v-else-if="regionSearchQuery.isLoading.value" class="state-copy">
+        Loading supported regions.
+      </p>
 
       <div v-else class="result-list">
-      <button
-        v-for="region in searchResults"
-        :key="region.id"
-        class="result-item"
-        :class="{ selected: isRegionSelected(region, selectedRegion) }"
-        type="button"
-        @click="emit('selectRegion', region)"
-      >
-        <span class="result-main">
-          <span class="result-name">{{ region.displayName }}</span>
-          <span class="result-kind">{{ getRegionKindLabel(region) }}</span>
-        </span>
-        <span class="result-meta">{{ getRegionMetaLabel(region) }}</span>
-      </button>
-    </div>
+        <button
+          v-for="region in searchResults"
+          :key="region.id"
+          class="result-item"
+          :class="{ selected: isRegionSelected(region, selectedRegion) }"
+          type="button"
+          @click="emit('selectRegion', region)"
+        >
+          <span class="result-main">
+            <span class="result-name">{{ region.displayName }}</span>
+            <span class="result-kind">{{ getRegionKindLabel(region) }}</span>
+          </span>
+          <span class="result-meta">{{ getRegionMetaLabel(region) }}</span>
+        </button>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped lang="scss">
-@use '../../../styles/variables' as *;
+@use "../../../styles/variables" as *;
 
 .search-panel {
   position: absolute;

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  WATCHED_REGIONS_PATH,
-  fetchWatchedRegions,
-  watchRegion,
-  unwatchRegion,
-} from "./api";
+import { WATCHED_REGIONS_PATH, fetchWatchedRegions, watchRegion, unwatchRegion } from "./api";
 
 const regionSearchResult = {
   id: "country:ke",
@@ -56,9 +51,9 @@ describe("fetchWatchedRegions", () => {
   });
 
   it("rejects a malformed response", async () => {
-    await expect(
-      fetchWatchedRegions(async () => Response.json({})),
-    ).rejects.toThrow("Watched regions returned an invalid response");
+    await expect(fetchWatchedRegions(async () => Response.json({}))).rejects.toThrow(
+      "Watched regions returned an invalid response",
+    );
   });
 });
 
