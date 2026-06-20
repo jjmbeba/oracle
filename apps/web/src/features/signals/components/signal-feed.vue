@@ -14,7 +14,9 @@ const emit = defineEmits<{
   signalClick: [lng: number, lat: number];
 }>();
 
-const { results, allSignals, isLoadingAny } = useSignalFeedQueries(toRef(props, "activeCategories"));
+const { results, allSignals, isLoadingAny } = useSignalFeedQueries(
+  toRef(props, "activeCategories"),
+);
 
 const sortedSignals = computed<readonly SignalFeedItem[]>(() =>
   [...allSignals.value].sort((a, b) => {
@@ -25,9 +27,7 @@ const sortedSignals = computed<readonly SignalFeedItem[]>(() =>
   }),
 );
 
-const allFreshness = computed(() =>
-  results.value.flatMap((r) => r.data?.freshness ?? []),
-);
+const allFreshness = computed(() => results.value.flatMap((r) => r.data?.freshness ?? []));
 
 const latestFreshnessTime = computed(() => {
   const timestamps = allFreshness.value
@@ -78,7 +78,9 @@ function handleItemClick(signal: SignalFeedItem) {
         </span>
         <span class="item-title">{{ signal.title }}</span>
         <span class="item-meta">
-          <span v-if="signal.sourceLink?.label" class="item-source">{{ signal.sourceLink.label }}</span>
+          <span v-if="signal.sourceLink?.label" class="item-source">{{
+            signal.sourceLink.label
+          }}</span>
           <span class="item-time">{{ formatShortRelativeTime(signal.effectiveAt) }}</span>
         </span>
       </button>
@@ -87,7 +89,7 @@ function handleItemClick(signal: SignalFeedItem) {
 </template>
 
 <style scoped lang="scss">
-@use '../../../styles/variables' as *;
+@use "../../../styles/variables" as *;
 
 .feed {
   display: flex;

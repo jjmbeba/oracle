@@ -35,7 +35,7 @@ function toggle(category: SignalCategory) {
 </template>
 
 <style scoped lang="scss">
-@use '../../../styles/variables' as *;
+@use "../../../styles/variables" as *;
 
 .toggles {
   display: flex;
@@ -52,7 +52,10 @@ function toggle(category: SignalCategory) {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
 
   &:hover {
     border-color: $border-hover;

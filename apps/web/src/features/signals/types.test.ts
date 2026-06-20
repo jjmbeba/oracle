@@ -125,6 +125,6 @@ describe("signalFeedToGeoJson", () => {
   });
 
   it("uses the canonical severity style as the source of truth", () => {
-    expect(SEVERITY_STYLES.moderate.color).toBe("#7aaa6b");
+    expect(SEVERITY_STYLES.moderate.color).toBe("#8bbf7a");
   });
 });

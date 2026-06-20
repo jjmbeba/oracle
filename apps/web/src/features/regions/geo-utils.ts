@@ -3,20 +3,13 @@ import { countries } from "@oracle/domain";
 const NEAREST_MAX_KM = 1000;
 const KM_PER_DEGREE = 111;
 
-const haversineDistanceKm = (
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number => {
+const haversineDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
@@ -33,10 +26,7 @@ export type OverviewFactsForBounds = {
   readonly populationDensity: number | null;
 };
 
-export type LngLatBounds = readonly [
-  readonly [number, number],
-  readonly [number, number],
-];
+export type LngLatBounds = readonly [readonly [number, number], readonly [number, number]];
 
 export function pointToBounds(lng: number, lat: number): LngLatBounds {
   const deg = 0.5;
@@ -83,12 +73,7 @@ export function findNearestCountry(lat: number, lng: number): CountryMatch | nul
   for (const country of countries) {
     if (country.latitude === null || country.longitude === null) continue;
 
-    const dist = haversineDistanceKm(
-      lat,
-      lng,
-      country.latitude,
-      country.longitude,
-    );
+    const dist = haversineDistanceKm(lat, lng, country.latitude, country.longitude);
 
     if (dist < minDist) {
       minDist = dist;

@@ -68,25 +68,34 @@ function buildRows<T>(facts: T, defs: FactDef<T>[]): FactRow[] {
 }
 
 const COUNTRY_FACTS: FactDef<CountryDossierFacts>[] = [
-  { label: "Capital", get: f => f.capital },
-  { label: "Population", get: f => formatPopulation(f.population) },
-  { label: "Languages", get: f => f.languages?.join(", ") ?? null },
-  { label: "Currencies", get: f => f.currencies?.join(", ") ?? null },
-  { label: "Coordinates", get: f =>
+  { label: "Capital", get: (f) => f.capital },
+  { label: "Population", get: (f) => formatPopulation(f.population) },
+  { label: "Languages", get: (f) => f.languages?.join(", ") ?? null },
+  { label: "Currencies", get: (f) => f.currencies?.join(", ") ?? null },
+  {
+    label: "Coordinates",
+    get: (f) =>
       f.latitude !== null && f.longitude !== null
         ? `${formatCoordinate(f.latitude, "lat")}, ${formatCoordinate(f.longitude, "lng")}`
-        : null },
-  { label: "Flag", get: f => f.flagEmoji },
-  { label: "GDP per capita", get: f => formatGdp(f.gdpPerCapita) },
-  { label: "Pop. density", get: f => f.populationDensity !== null ? `${f.populationDensity}/km²` : null },
+        : null,
+  },
+  { label: "Flag", get: (f) => f.flagEmoji },
+  { label: "GDP per capita", get: (f) => formatGdp(f.gdpPerCapita) },
+  {
+    label: "Pop. density",
+    get: (f) => (f.populationDensity !== null ? `${f.populationDensity}/km²` : null),
+  },
 ];
 
 const GROUP_FACTS: FactDef<GroupDossierFacts>[] = [
-  { label: "Population", get: f => formatPopulation(f.population) },
-  { label: "Languages", get: f => f.languages.length > 0 ? f.languages.join(", ") : null },
-  { label: "Currencies", get: f => f.currencies.length > 0 ? f.currencies.join(", ") : null },
-  { label: "GDP per capita (avg)", get: f => formatGdp(f.gdpPerCapita) },
-  { label: "Pop. density (avg)", get: f => f.populationDensity !== null ? `${f.populationDensity}/km²` : null },
+  { label: "Population", get: (f) => formatPopulation(f.population) },
+  { label: "Languages", get: (f) => (f.languages.length > 0 ? f.languages.join(", ") : null) },
+  { label: "Currencies", get: (f) => (f.currencies.length > 0 ? f.currencies.join(", ") : null) },
+  { label: "GDP per capita (avg)", get: (f) => formatGdp(f.gdpPerCapita) },
+  {
+    label: "Pop. density (avg)",
+    get: (f) => (f.populationDensity !== null ? `${f.populationDensity}/km²` : null),
+  },
 ];
 
 export function buildOverviewFactRows(

@@ -7,7 +7,7 @@ type Listener = (...args: unknown[]) => void;
 
 const makeMap = () => {
   const layers = new Map<string, Set<Listener>>();
-  
+
   return {
     on: vi.fn((event: string, layerId: string, handler: Listener) => {
       if (event !== "click") return;
@@ -31,7 +31,12 @@ describe("useSignalLayerClicks", () => {
     const isLoaded = ref(true);
     const categories = ref<readonly SignalCategory[]>(["earthquake", "weather"]);
 
-    useSignalLayerClicks(map, isLoaded, () => categories.value, () => {});
+    useSignalLayerClicks(
+      map,
+      isLoaded,
+      () => categories.value,
+      () => {},
+    );
 
     expect(mapMock.on).toHaveBeenCalled();
     expect(mapMock.handlers("oracle-signals-circle-earthquake").size).toBe(1);
@@ -44,7 +49,12 @@ describe("useSignalLayerClicks", () => {
     const isLoaded = ref(true);
     const categories = ref<readonly SignalCategory[]>(["earthquake"]);
 
-    useSignalLayerClicks(map, isLoaded, () => categories.value, () => {});
+    useSignalLayerClicks(
+      map,
+      isLoaded,
+      () => categories.value,
+      () => {},
+    );
 
     expect(mapMock.handlers("oracle-signals-circle-earthquake").size).toBe(1);
     expect(mapMock.handlers("oracle-signals-circle-weather").size).toBe(0);
@@ -61,7 +71,12 @@ describe("useSignalLayerClicks", () => {
     const isLoaded = ref(false);
     const categories = ref<readonly SignalCategory[]>(["earthquake"]);
 
-    useSignalLayerClicks(map, isLoaded, () => categories.value, () => {});
+    useSignalLayerClicks(
+      map,
+      isLoaded,
+      () => categories.value,
+      () => {},
+    );
 
     expect(mapMock.on).not.toHaveBeenCalled();
   });
@@ -75,7 +90,9 @@ describe("useSignalLayerClicks", () => {
 
     useSignalLayerClicks(map, isLoaded, () => categories.value, onClick);
 
-    const handler = [...mapMock.handlers("oracle-signals-circle-earthquake")][0] as (e: unknown) => void;
+    const handler = [...mapMock.handlers("oracle-signals-circle-earthquake")][0] as (
+      e: unknown,
+    ) => void;
     handler({
       features: [
         {

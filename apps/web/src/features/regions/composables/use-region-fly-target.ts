@@ -31,7 +31,7 @@ export function useRegionFlyTarget(
 
   function flyToRegion(region: RegionSearchResult): void {
     const bounds = regionBounds(region);
-    
+
     if (bounds) override.value = bounds;
   }
 

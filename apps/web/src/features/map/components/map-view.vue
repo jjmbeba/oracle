@@ -5,6 +5,7 @@ import { useMapLibre } from "../composables/use-map-libre";
 import { useSignalLayerManager } from "../composables/use-signal-layers";
 import { useSignalLayerClicks } from "../composables/use-signal-layer-clicks";
 import { renderSignalPopup } from "../composables/use-signal-popup";
+import { useSignalPulse } from "../composables/use-signal-pulse";
 import { useSignalFeedQueries } from "../../signals/queries";
 import { formatRelativeTime } from "../../signals/format";
 import { SEVERITY_STYLES } from "../../signals/types";
@@ -28,10 +29,17 @@ const emit = defineEmits<{
 const activeCategoriesRef = computed(() => props.activeCategories);
 const { allSignals } = useSignalFeedQueries(activeCategoriesRef);
 
-useSignalLayerClicks(map, isLoaded, () => activeCategoriesRef.value, (lng, lat) => {
-  emit("signalClick", lng, lat);
-  showPopup(lng, lat);
-});
+useSignalLayerClicks(
+  map,
+  isLoaded,
+  () => activeCategoriesRef.value,
+  (lng, lat) => {
+    emit("signalClick", lng, lat);
+    showPopup(lng, lat);
+  },
+);
+
+useSignalPulse(map, isLoaded, () => activeCategoriesRef.value);
 
 watch(
   [isLoaded, allSignals, () => props.activeCategories],

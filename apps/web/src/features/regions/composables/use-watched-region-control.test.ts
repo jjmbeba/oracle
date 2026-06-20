@@ -31,7 +31,10 @@ describe("useWatchedRegionControl", () => {
     const selectedRegion = ref<RegionSearchResult | null>(kenya);
     const watchedRegions = ref<readonly WatchedRegion[]>([]);
 
-    const { isWatched, watchDisabledReason } = useWatchedRegionControl(selectedRegion, watchedRegions);
+    const { isWatched, watchDisabledReason } = useWatchedRegionControl(
+      selectedRegion,
+      watchedRegions,
+    );
     expect(isWatched.value).toBe(false);
     expect(watchDisabledReason.value).toBeNull();
   });
@@ -40,7 +43,10 @@ describe("useWatchedRegionControl", () => {
     const selectedRegion = ref<RegionSearchResult | null>(kenya);
     const watchedRegions = ref<readonly WatchedRegion[]>([watched("country:ke", kenya)]);
 
-    const { isWatched, watchDisabledReason } = useWatchedRegionControl(selectedRegion, watchedRegions);
+    const { isWatched, watchDisabledReason } = useWatchedRegionControl(
+      selectedRegion,
+      watchedRegions,
+    );
     expect(isWatched.value).toBe(true);
     expect(watchDisabledReason.value).toBeNull();
   });
@@ -53,7 +59,10 @@ describe("useWatchedRegionControl", () => {
       ),
     );
 
-    const { isWatched, watchDisabledReason } = useWatchedRegionControl(selectedRegion, watchedRegions);
+    const { isWatched, watchDisabledReason } = useWatchedRegionControl(
+      selectedRegion,
+      watchedRegions,
+    );
     expect(isWatched.value).toBe(false);
     expect(watchDisabledReason.value).toBe(`Maximum ${MAX_WATCHED_REGIONS} regions watched`);
   });
@@ -65,7 +74,10 @@ describe("useWatchedRegionControl", () => {
       watched("country:jp", japan),
     ]);
 
-    const { isWatched, watchDisabledReason } = useWatchedRegionControl(selectedRegion, watchedRegions);
+    const { isWatched, watchDisabledReason } = useWatchedRegionControl(
+      selectedRegion,
+      watchedRegions,
+    );
     expect(isWatched.value).toBe(true);
     expect(watchDisabledReason.value).toBeNull();
   });

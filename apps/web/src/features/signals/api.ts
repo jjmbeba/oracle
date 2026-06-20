@@ -75,16 +75,15 @@ function isSignalFeedItem(value: unknown): value is SignalFeedItem {
     typeof value.title !== "string" ||
     typeof value.confidence !== "string" ||
     typeof value.effectiveAt !== "string"
-  ) return false;
+  )
+    return false;
   if (!isSignalCategory(value.category)) return false;
   if (!isSignalSeverity(value.severity)) return false;
   if (!isSignalFeedScope(value.scope)) return false;
   if (value.sourceLink !== undefined) {
     if (!isRecord(value.sourceLink) || typeof value.sourceLink.url !== "string") return false;
-    if (
-      value.sourceLink.label !== undefined &&
-      typeof value.sourceLink.label !== "string"
-    ) return false;
+    if (value.sourceLink.label !== undefined && typeof value.sourceLink.label !== "string")
+      return false;
   }
   return true;
 }

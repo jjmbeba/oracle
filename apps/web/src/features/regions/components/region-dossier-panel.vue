@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useRegionDossierQuery } from "../queries";
 import type { RegionSearchResult } from "../api";
-import { getRegionKindLabel, getRegionMetaLabel, buildOverviewFactRows, type FactRow } from "../region-ui";
+import {
+  getRegionKindLabel,
+  getRegionMetaLabel,
+  buildOverviewFactRows,
+  type FactRow,
+} from "../region-ui";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -25,8 +30,8 @@ const factRows = computed<readonly FactRow[]>(() => {
   return buildOverviewFactRows(d.overviewFacts, d.region.kind);
 });
 
-const factSourceLabels = computed<readonly string[]>(() =>
-  dossierData.value?.factSources.map((s) => s.label) ?? []
+const factSourceLabels = computed<readonly string[]>(
+  () => dossierData.value?.factSources.map((s) => s.label) ?? [],
 );
 </script>
 
@@ -37,12 +42,7 @@ const factSourceLabels = computed<readonly string[]>(() =>
         <p class="panel-label">Selected region</p>
         <div class="title-row">
           <h2>{{ selectedRegion.displayName }}</h2>
-          <button
-            class="close-btn"
-            type="button"
-            aria-label="Close dossier"
-            @click="emit('close')"
-          >
+          <button class="close-btn" type="button" aria-label="Close dossier" @click="emit('close')">
             &times;
           </button>
         </div>
@@ -52,12 +52,7 @@ const factSourceLabels = computed<readonly string[]>(() =>
         </div>
       </div>
 
-      <button
-        v-if="isWatched"
-        class="watch-btn watching"
-        type="button"
-        @click="emit('unwatch')"
-      >
+      <button v-if="isWatched" class="watch-btn watching" type="button" @click="emit('unwatch')">
         Unwatch region
       </button>
       <button
@@ -79,11 +74,7 @@ const factSourceLabels = computed<readonly string[]>(() =>
         No overview facts available for this region
       </p>
       <dl v-else class="fact-list">
-        <div
-          v-for="row in factRows"
-          :key="row.label"
-          class="fact-row"
-        >
+        <div v-for="row in factRows" :key="row.label" class="fact-row">
           <dt class="fact-label">{{ row.label }}</dt>
           <dd class="fact-value">
             <span class="fact-text">{{ row.value }}</span>

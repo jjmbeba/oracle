@@ -19,13 +19,7 @@ defineProps<{
       <span>{{ provider }}</span>
       <span>{{ effectiveAtLabel }}</span>
     </div>
-    <a
-      v-if="sourceLink"
-      class="popup-source"
-      :href="sourceLink.url"
-      target="_blank"
-      rel="noopener"
-    >
+    <a v-if="sourceLink" class="popup-source" :href="sourceLink.url" target="_blank" rel="noopener">
       {{ sourceLink.label ?? "Open source" }} ↗
     </a>
   </div>

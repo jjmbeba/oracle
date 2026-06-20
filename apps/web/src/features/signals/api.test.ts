@@ -92,11 +92,13 @@ describe("fetchSignalFeed", () => {
   it("accepts global scope signals", async () => {
     const result = await fetchSignalFeed("space-weather", async () => {
       return Response.json({
-        signals: [{
-          ...sampleSignal,
-          category: "space-weather",
-          scope: { kind: "global" },
-        }],
+        signals: [
+          {
+            ...sampleSignal,
+            category: "space-weather",
+            scope: { kind: "global" },
+          },
+        ],
         freshness: [],
       });
     });
@@ -107,15 +109,17 @@ describe("fetchSignalFeed", () => {
   it("accepts signals without source links", async () => {
     const result = await fetchSignalFeed("earthquake", async () => {
       return Response.json({
-        signals: [{
-          provider: "usgs",
-          category: "earthquake",
-          title: "No source",
-          severity: "minor",
-          confidence: "low",
-          effectiveAt: "2026-06-18T12:00:00.000Z",
-          scope: { kind: "global" },
-        }],
+        signals: [
+          {
+            provider: "usgs",
+            category: "earthquake",
+            title: "No source",
+            severity: "minor",
+            confidence: "low",
+            effectiveAt: "2026-06-18T12:00:00.000Z",
+            scope: { kind: "global" },
+          },
+        ],
         freshness: [],
       });
     });
@@ -127,10 +131,12 @@ describe("fetchSignalFeed", () => {
     await expect(
       fetchSignalFeed("earthquake", async () => {
         return Response.json({
-          signals: [{
-            ...sampleSignal,
-            scope: { kind: "geometry" },
-          }],
+          signals: [
+            {
+              ...sampleSignal,
+              scope: { kind: "geometry" },
+            },
+          ],
           freshness: [],
         });
       }),
@@ -141,10 +147,12 @@ describe("fetchSignalFeed", () => {
     await expect(
       fetchSignalFeed("earthquake", async () => {
         return Response.json({
-          signals: [{
-            ...sampleSignal,
-            sourceLink: { url: "https://example.com", label: 42 },
-          }],
+          signals: [
+            {
+              ...sampleSignal,
+              sourceLink: { url: "https://example.com", label: 42 },
+            },
+          ],
           freshness: [],
         });
       }),

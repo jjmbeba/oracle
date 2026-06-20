@@ -14,7 +14,9 @@ export type SignalFeedResult = {
 };
 
 export type SignalFeedQueries = {
-  readonly results: Readonly<Ref<ReadonlyArray<{ readonly data: SignalFeedResult | undefined; readonly isLoading: boolean }>>>;
+  readonly results: Readonly<
+    Ref<ReadonlyArray<{ readonly data: SignalFeedResult | undefined; readonly isLoading: boolean }>>
+  >;
   readonly allSignals: Ref<readonly SignalFeedItem[]>;
   readonly isLoadingAny: Ref<boolean>;
 };

@@ -2,10 +2,16 @@ import type { Ref } from "vue";
 import type { GeoJSONSource, Map } from "maplibre-gl";
 import type { SignalFeedItem } from "../../signals/api";
 import { signalFeedToGeoJson, SEVERITY_STYLES } from "../../signals/types";
-import { SIGNAL_LAYER_PREFIX, signalLayerId, signalSourceId } from "./signal-layer-ids";
+import {
+  SIGNAL_LAYER_PREFIX,
+  SIGNAL_HALO_LAYER_PREFIX,
+  signalHaloLayerId,
+  signalLayerId,
+  signalSourceId,
+} from "./signal-layer-ids";
 import type { SignalCategory } from "../../signals/types";
 
-type SeverityField = "radius" | "opacity" | "color";
+type SeverityField = "radius" | "opacity" | "color" | "strokeColor";
 
 const matchExpression = (field: SeverityField, fallback: number | string) => [
   "match",
@@ -14,16 +20,23 @@ const matchExpression = (field: SeverityField, fallback: number | string) => [
   fallback,
 ];
 
-const STROKE_BY_SEVERITY: Record<string, number> = Object.fromEntries(
-  Object.entries(SEVERITY_STYLES).map(([k, s]) => [k, s.radius >= 13 ? 1 : 0.5]),
-);
-
-const strokeMatchExpression = [
+const strokeColorMatch = matchExpression("strokeColor", SEVERITY_STYLES.minor.strokeColor) as never;
+const strokeWidthMatch = [
   "match",
   ["get", "severity"],
-  ...Object.entries(STROKE_BY_SEVERITY).flatMap(([k, v]) => [k, v]),
+  ...Object.entries(SEVERITY_STYLES).flatMap(([k, s]) => [k, s.strokeWidth]),
   0,
 ];
+const strokeOpacityMatch = [
+  "match",
+  ["get", "severity"],
+  ...Object.entries(SEVERITY_STYLES).flatMap(([k, s]) => [k, s.strokeOpacity]),
+  0,
+];
+
+const HALO_SEVERITIES: string[] = Object.entries(SEVERITY_STYLES)
+  .filter(([, s]) => s.pulse)
+  .map(([k]) => k);
 
 export type SignalLayerManager = {
   readonly updateCategoryLayer: (
@@ -38,10 +51,30 @@ export function useSignalLayerManager(
   map: Ref<Map | null>,
   isLoaded: Ref<boolean>,
 ): SignalLayerManager {
-  function updateCategoryLayer(
-    category: SignalCategory,
-    signals: readonly SignalFeedItem[],
-  ): void {
+  function addHaloLayer(category: SignalCategory): void {
+    const m = map.value;
+    if (!m) return;
+    const lid = signalHaloLayerId(category);
+    const sid = signalSourceId(category);
+    if (m.getLayer(lid)) return;
+    m.addLayer(
+      {
+        id: lid,
+        source: sid,
+        type: "circle",
+        filter: ["match", ["get", "severity"], HALO_SEVERITIES, true, false] as never,
+        paint: {
+          "circle-radius": 0,
+          "circle-color": matchExpression("color", SEVERITY_STYLES.minor.color) as never,
+          "circle-opacity": 0,
+          "circle-stroke-width": 0,
+        },
+      },
+      signalLayerId(category),
+    );
+  }
+
+  function updateCategoryLayer(category: SignalCategory, signals: readonly SignalFeedItem[]): void {
     const m = map.value;
     if (!m || !isLoaded.value) return;
 
@@ -51,6 +84,9 @@ export function useSignalLayerManager(
 
     if (m.getSource(sid)) {
       (m.getSource(sid) as GeoJSONSource).setData(geojson);
+      if (!m.getLayer(signalHaloLayerId(category))) {
+        addHaloLayer(category);
+      }
       return;
     }
 
@@ -66,20 +102,24 @@ export function useSignalLayerManager(
         "circle-radius": matchExpression("radius", 4) as never,
         "circle-opacity": matchExpression("opacity", 0.4) as never,
         "circle-color": matchExpression("color", SEVERITY_STYLES.minor.color) as never,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": strokeMatchExpression as never,
-        "circle-stroke-opacity": 0.25,
+        "circle-stroke-color": strokeColorMatch as never,
+        "circle-stroke-width": strokeWidthMatch as never,
+        "circle-stroke-opacity": strokeOpacityMatch as never,
       },
     });
+
+    addHaloLayer(category);
   }
 
   function removeCategoryLayer(category: SignalCategory): void {
     const m = map.value;
     if (!m) return;
 
+    const haloLid = signalHaloLayerId(category);
     const lid = signalLayerId(category);
     const sid = signalSourceId(category);
 
+    if (m.getLayer(haloLid)) m.removeLayer(haloLid);
     if (m.getLayer(lid)) m.removeLayer(lid);
     if (m.getSource(sid)) m.removeSource(sid);
   }
@@ -90,7 +130,10 @@ export function useSignalLayerManager(
 
     const layers = m.getStyle().layers ?? [];
     for (const layer of layers) {
-      if (layer.id.startsWith(`${SIGNAL_LAYER_PREFIX}-circle-`)) {
+      if (
+        layer.id.startsWith(`${SIGNAL_HALO_LAYER_PREFIX}-`) ||
+        layer.id.startsWith(`${SIGNAL_LAYER_PREFIX}-circle-`)
+      ) {
         m.removeLayer(layer.id);
       }
     }

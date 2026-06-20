@@ -49,7 +49,12 @@ function isRegionSearchResult(value: unknown): value is RegionSearchResult {
   }
 
   if (value.kind === "country-group" || value.kind === "continent") {
-    return isStringArray(value.memberCountryIds) && typeof value.memberCount === "number" && Number.isInteger(value.memberCount) && value.memberCount >= 0;
+    return (
+      isStringArray(value.memberCountryIds) &&
+      typeof value.memberCount === "number" &&
+      Number.isInteger(value.memberCount) &&
+      value.memberCount >= 0
+    );
   }
 
   return false;

@@ -1,11 +1,65 @@
 import type { SignalFeedItem } from "./api";
 
+export const SIGNAL_STROKE_DARK = "#0a0a0a";
+export const SIGNAL_STROKE_LIGHT = "#ffffff";
+export const SIGNAL_HALO_BASE_OPACITY = 0.75;
+
 export const SEVERITY_STYLES = {
-  minor:        { radius: 4,  opacity: 0.4,  color: "#6b8fa3",  pulse: false, label: "Minor" },
-  moderate:     { radius: 6,  opacity: 0.55, color: "#7aaa6b",  pulse: false, label: "Moderate" },
-  significant:  { radius: 9,  opacity: 0.7,  color: "#d4b04a",  pulse: false, label: "Significant" },
-  severe:       { radius: 13, opacity: 0.85, color: "#d48040",  pulse: true,  label: "Severe" },
-  extreme:      { radius: 18, opacity: 1.0,  color: "#c05050",  pulse: true,  label: "Extreme" },
+  minor: {
+    radius: 5,
+    opacity: 0.55,
+    color: "#7da4b8",
+    haloScale: 1,
+    strokeColor: SIGNAL_STROKE_DARK,
+    strokeOpacity: 0.35,
+    strokeWidth: 0.5,
+    pulse: false,
+    label: "Minor",
+  },
+  moderate: {
+    radius: 7,
+    opacity: 0.7,
+    color: "#8bbf7a",
+    haloScale: 1,
+    strokeColor: SIGNAL_STROKE_DARK,
+    strokeOpacity: 0.35,
+    strokeWidth: 0.5,
+    pulse: false,
+    label: "Moderate",
+  },
+  significant: {
+    radius: 10,
+    opacity: 0.8,
+    color: "#e0c05a",
+    haloScale: 1,
+    strokeColor: SIGNAL_STROKE_DARK,
+    strokeOpacity: 0.35,
+    strokeWidth: 0.5,
+    pulse: false,
+    label: "Significant",
+  },
+  severe: {
+    radius: 13,
+    opacity: 0.85,
+    color: "#d48040",
+    haloScale: 1.8,
+    strokeColor: SIGNAL_STROKE_LIGHT,
+    strokeOpacity: 0.25,
+    strokeWidth: 1,
+    pulse: true,
+    label: "Severe",
+  },
+  extreme: {
+    radius: 18,
+    opacity: 1.0,
+    color: "#c05050",
+    haloScale: 2.2,
+    strokeColor: SIGNAL_STROKE_LIGHT,
+    strokeOpacity: 0.25,
+    strokeWidth: 1,
+    pulse: true,
+    label: "Extreme",
+  },
 } as const;
 
 export type SignalSeverity = keyof typeof SEVERITY_STYLES;
@@ -29,8 +83,7 @@ export const CATEGORY_LABELS: Record<SignalCategory, string> = {
 };
 
 export const isSignalSeverity = (value: unknown): value is SignalSeverity =>
-  typeof value === "string" &&
-  Object.prototype.hasOwnProperty.call(SEVERITY_STYLES, value);
+  typeof value === "string" && Object.prototype.hasOwnProperty.call(SEVERITY_STYLES, value);
 
 export const isSignalCategory = (value: unknown): value is SignalCategory =>
   typeof value === "string" && (SIGNAL_CATEGORIES as readonly string[]).includes(value);
@@ -56,9 +109,7 @@ export type SignalGeoJsonCollection = {
   features: SignalGeoJsonFeature[];
 };
 
-export function signalFeedToGeoJson(
-  signals: readonly SignalFeedItem[],
-): SignalGeoJsonCollection {
+export function signalFeedToGeoJson(signals: readonly SignalFeedItem[]): SignalGeoJsonCollection {
   const features: SignalGeoJsonFeature[] = [];
 
   for (const s of signals) {

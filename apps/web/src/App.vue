@@ -31,10 +31,15 @@ const { data: watchedRegions } = useWatchedRegionsQuery(
 const { mutate: doWatch } = useWatchRegionMutation();
 const { mutate: doUnwatch } = useUnwatchRegionMutation();
 
-const watchedRegionsForControl = computed<readonly WatchedRegion[]>(() => watchedRegions.value ?? []);
+const watchedRegionsForControl = computed<readonly WatchedRegion[]>(
+  () => watchedRegions.value ?? [],
+);
 
 const { flyTarget, flyToPoint, clearOverride } = useRegionFlyTarget(selectedRegion);
-const { isWatched, watchDisabledReason } = useWatchedRegionControl(selectedRegion, watchedRegionsForControl);
+const { isWatched, watchDisabledReason } = useWatchedRegionControl(
+  selectedRegion,
+  watchedRegionsForControl,
+);
 
 onMounted(() => {
   initialize();
@@ -58,7 +63,7 @@ function handleWatch(): void {
 
 function handleUnwatch(): void {
   if (!selectedRegion.value) return;
-  
+
   doUnwatch(selectedRegion.value.id);
 }
 

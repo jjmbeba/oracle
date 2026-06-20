@@ -26,7 +26,7 @@ export function useWatchedRegionControl(
     if (watchedRegions.value.length >= MAX_WATCHED_REGIONS) {
       return `Maximum ${MAX_WATCHED_REGIONS} regions watched`;
     }
-    
+
     return null;
   });
 
