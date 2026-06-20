@@ -42,15 +42,12 @@ function createInMemoryStore(): WatchedRegionStore {
     listByUser: async (userId) => data.filter((r) => r.userId === userId),
     findByUserAndRegion: async (userId, regionId) =>
       data.find((r) => r.userId === userId && r.regionId === regionId),
-    countByUser: async (userId) =>
-      data.filter((r) => r.userId === userId).length,
+    countByUser: async (userId) => data.filter((r) => r.userId === userId).length,
     insert: async (row) => {
       data.push({ ...row, createdAt: new Date() });
     },
     deleteByUserAndRegion: async (userId, regionId) => {
-      const idx = data.findIndex(
-        (r) => r.userId === userId && r.regionId === regionId,
-      );
+      const idx = data.findIndex((r) => r.userId === userId && r.regionId === regionId);
 
       if (idx !== -1) {
         data.splice(idx, 1);
@@ -59,9 +56,7 @@ function createInMemoryStore(): WatchedRegionStore {
   };
 }
 
-function createTestApp(overrides?: {
-  requireAuth?: MiddlewareHandler<AppBindings>;
-}) {
+function createTestApp(overrides?: { requireAuth?: MiddlewareHandler<AppBindings> }) {
   const store = createInMemoryStore();
   const auth = overrides?.requireAuth ?? requireAuth;
   const app = new Hono<AppBindings>();

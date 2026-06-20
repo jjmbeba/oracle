@@ -1,6 +1,7 @@
 export const defaultPlaceholderIntervalMs = 5_000;
 export const maxIntervalMs = 2_147_483_647;
 export const defaultUsgsPollIntervalMs = 300_000;
+export const defaultSwpcPollIntervalMs = 600_000;
 export const defaultDatabaseUrl = "";
 
 export function parsePlaceholderIntervalMs(
@@ -47,4 +48,25 @@ export function parseUsgsPollIntervalMs(
 
 export function readUsgsPollIntervalMs(env: NodeJS.ProcessEnv = process.env): number {
   return parseUsgsPollIntervalMs(env.USGS_POLL_INTERVAL_MS);
+}
+
+export function parseSwpcPollIntervalMs(
+  value: string | undefined,
+  fallbackMs = defaultSwpcPollIntervalMs,
+): number {
+  if (value === undefined) {
+    return fallbackMs;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0 || parsedValue > maxIntervalMs) {
+    return fallbackMs;
+  }
+
+  return parsedValue;
+}
+
+export function readSwpcPollIntervalMs(env: NodeJS.ProcessEnv = process.env): number {
+  return parseSwpcPollIntervalMs(env.SWPC_POLL_INTERVAL_MS);
 }

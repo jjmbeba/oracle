@@ -1,10 +1,6 @@
 import type { ProviderFreshness, schema } from "@oracle/db";
 import { queryProviderFreshness, querySignalFeed } from "@oracle/db";
-import {
-  signalCategories,
-  type NormalizedSignal,
-  type SignalCategory,
-} from "@oracle/domain";
+import { signalCategories, type NormalizedSignal, type SignalCategory } from "@oracle/domain";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Hono } from "hono";
 
@@ -13,24 +9,14 @@ type Database = PostgresJsDatabase<typeof schema>;
 const SIGNAL_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export type SignalFeedStore = {
-  queryFeed(
-    category: SignalCategory,
-    since: Date,
-  ): Promise<NormalizedSignal[]>;
-  queryFreshness(
-    provider: string,
-    category: SignalCategory,
-  ): Promise<ProviderFreshness | null>;
+  queryFeed(category: SignalCategory, since: Date): Promise<NormalizedSignal[]>;
+  queryFreshness(provider: string, category: SignalCategory): Promise<ProviderFreshness | null>;
 };
 
-export function createDrizzleSignalFeedStore(
-  db: Database,
-): SignalFeedStore {
+export function createDrizzleSignalFeedStore(db: Database): SignalFeedStore {
   return {
-    queryFeed: (category, since) =>
-      querySignalFeed(db, { category, since }),
-    queryFreshness: (provider, category) =>
-      queryProviderFreshness(db, provider, category),
+    queryFeed: (category, since) => querySignalFeed(db, { category, since }),
+    queryFreshness: (provider, category) => queryProviderFreshness(db, provider, category),
   };
 }
 
@@ -45,10 +31,7 @@ type FreshnessResponse = {
 };
 
 function parseCategoryParam(raw: string | undefined): SignalCategory | null {
-  if (
-    typeof raw === "string" &&
-    (signalCategories as readonly string[]).includes(raw)
-  ) {
+  if (typeof raw === "string" && (signalCategories as readonly string[]).includes(raw)) {
     return raw as SignalCategory;
   }
   return null;
@@ -76,9 +59,7 @@ export function createSignalFeedRoutes(options: SignalFeedOptions) {
 
     const signals = await store.queryFeed(category, since);
 
-    const providers = [
-      ...new Set(signals.map((s) => s.provider)),
-    ];
+    const providers = [...new Set(signals.map((s) => s.provider))];
 
     const freshnessEntries = await Promise.all(
       providers.map((p) => store.queryFreshness(p, category)),

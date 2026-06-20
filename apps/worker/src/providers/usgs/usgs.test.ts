@@ -107,9 +107,19 @@ describe("normalizeUsgsResponse", () => {
     const { signals, skipped } = normalizeUsgsResponse({
       type: "FeatureCollection",
       features: [
-        { type: "Feature", id: "good", geometry: { type: "Point", coordinates: [0, 0] }, properties: { mag: 4.0, place: "A", time: 1000, updated: 1000, url: "https://a.com" } },
+        {
+          type: "Feature",
+          id: "good",
+          geometry: { type: "Point", coordinates: [0, 0] },
+          properties: { mag: 4.0, place: "A", time: 1000, updated: 1000, url: "https://a.com" },
+        },
         { type: "NotAFeature", id: "bad" },
-        { type: "Feature", id: "good2", geometry: { type: "Point", coordinates: [1, 1] }, properties: { mag: 3.0, place: "B", time: 2000, updated: 2000, url: "https://b.com" } },
+        {
+          type: "Feature",
+          id: "good2",
+          geometry: { type: "Point", coordinates: [1, 1] },
+          properties: { mag: 3.0, place: "B", time: 2000, updated: 2000, url: "https://b.com" },
+        },
       ],
     });
 
@@ -137,7 +147,13 @@ describe("normalizeUsgsResponse", () => {
           type: "Feature",
           id: "null-mag",
           geometry: { type: "Point", coordinates: [0, 0] },
-          properties: { mag: null, place: "Somewhere", time: 1000, updated: 1000, url: "https://a.com" },
+          properties: {
+            mag: null,
+            place: "Somewhere",
+            time: 1000,
+            updated: 1000,
+            url: "https://a.com",
+          },
         },
       ],
     });

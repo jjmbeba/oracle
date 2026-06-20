@@ -18,10 +18,7 @@ function makeSignal(overrides: Partial<NormalizedSignal>): NormalizedSignal {
   };
 }
 
-function signalFeedApp(
-  signals: NormalizedSignal[],
-  freshness?: ProviderFreshness | null,
-) {
+function signalFeedApp(signals: NormalizedSignal[], freshness?: ProviderFreshness | null) {
   const store: SignalFeedStore = {
     queryFeed: async () => signals,
     queryFreshness: async () => freshness ?? null,
@@ -286,9 +283,7 @@ describe("signal feed", () => {
     expect(body.signals).toHaveLength(1);
     expect(body.signals[0].title).toBe("M 5.2 Test");
     expect(body.freshness).toHaveLength(1);
-    expect(body.freshness[0].lastSuccessfulPollAt).toBe(
-      "2026-06-18T12:00:00.000Z",
-    );
+    expect(body.freshness[0].lastSuccessfulPollAt).toBe("2026-06-18T12:00:00.000Z");
   });
 
   it("returns empty signals and empty freshness when no data", async () => {
@@ -379,11 +374,48 @@ describe("signal feed", () => {
     expect(response.status).toBe(200);
 
     const body = await response.json();
-    const providers = body.freshness.map(
-      (f: { provider: string }) => f.provider,
-    );
+    const providers = body.freshness.map((f: { provider: string }) => f.provider);
 
     expect(providers).toEqual(["prov-a"]);
+  });
+
+  it("returns space-weather signals and freshness for that category", async () => {
+    const swpcSignal: NormalizedSignal = {
+      provider: "noaa-swpc",
+      dedupeKey: "signal:space-weather:noaa-swpc:provider-derived:altk04+%2F+2666",
+      providerEventId: "K04A",
+      category: "space-weather",
+      title: "ALERT: Geomagnetic K-index of 4",
+      severity: "minor",
+      confidence: "high",
+      effectiveAt: new Date("2026-06-13T21:01:31Z").toISOString(),
+      scope: { kind: "global" },
+      sourceLink: {
+        url: "https://www.swpc.noaa.gov/products/alerts-watches-and-warnings",
+        label: "NOAA SWPC Alert",
+      },
+    };
+    const testApp = signalFeedApp([swpcSignal], {
+      provider: "noaa-swpc",
+      category: "space-weather",
+      lastSuccessfulPollAt: new Date("2026-06-13T21:01:35Z"),
+    });
+
+    const response = await testApp.request("/signals/feed?category=space-weather");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.signals).toHaveLength(1);
+    expect(body.signals[0].category).toBe("space-weather");
+    expect(body.signals[0].scope).toEqual({ kind: "global" });
+    expect(body.freshness).toHaveLength(1);
+    expect(body.freshness[0]).toEqual({
+      provider: "noaa-swpc",
+      category: "space-weather",
+      lastSuccessfulPollAt: "2026-06-13T21:01:35.000Z",
+    });
   });
 });
 
@@ -436,9 +468,7 @@ describe("signal map", () => {
     const response = await testApp.request("/signals/map?category=earthquake");
     const body = await response.json();
 
-    expect(body.features[0].id).toBe(
-      "signal:earthquake:test:fallback",
-    );
+    expect(body.features[0].id).toBe("signal:earthquake:test:fallback");
   });
 
   it("includes severity, confidence, category, and source data in properties", async () => {
@@ -521,5 +551,26 @@ describe("signal map", () => {
     const body = await response.json();
 
     expect(body.error.code).toBe("invalid_category");
+  });
+
+  it("returns an empty FeatureCollection for space-weather (global context, no map precision)", async () => {
+    const globalSpaceWeather = makeSignal({
+      provider: "noaa-swpc",
+      category: "space-weather",
+      title: "Geomagnetic K-index of 4",
+      severity: "minor",
+      confidence: "high",
+      scope: { kind: "global" },
+    });
+    const testApp = signalFeedApp([globalSpaceWeather], null);
+
+    const response = await testApp.request("/signals/map?category=space-weather");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.type).toBe("FeatureCollection");
+    expect(body.features).toEqual([]);
   });
 });

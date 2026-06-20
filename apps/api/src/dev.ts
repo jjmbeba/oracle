@@ -92,7 +92,6 @@ export function startApiDevServer(options: StartApiDevServerOptions = {}): ApiRu
     } finally {
       await connection.close();
     }
-
   };
 
   const handleSignal = (): void => {

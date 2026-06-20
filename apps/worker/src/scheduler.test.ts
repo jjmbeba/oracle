@@ -93,7 +93,11 @@ describe("worker scheduler", () => {
     await Promise.resolve();
 
     expect(run).toHaveBeenCalledTimes(3);
-    expect(records.map((record) => record.event)).toEqual(["job.failure", "job.success", "job.success"]);
+    expect(records.map((record) => record.event)).toEqual([
+      "job.failure",
+      "job.success",
+      "job.success",
+    ]);
 
     await scheduler.stop();
   });

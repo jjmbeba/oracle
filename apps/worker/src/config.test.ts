@@ -71,14 +71,10 @@ describe("USGS poll interval", () => {
   });
 
   it("falls back when the interval is above the timer maximum", () => {
-    expect(parseUsgsPollIntervalMs(String(maxIntervalMs + 1))).toBe(
-      defaultUsgsPollIntervalMs,
-    );
+    expect(parseUsgsPollIntervalMs(String(maxIntervalMs + 1))).toBe(defaultUsgsPollIntervalMs);
   });
 
   it("reads USGS_POLL_INTERVAL_MS from env", () => {
-    expect(
-      readUsgsPollIntervalMs({ USGS_POLL_INTERVAL_MS: "120000" }),
-    ).toBe(120000);
+    expect(readUsgsPollIntervalMs({ USGS_POLL_INTERVAL_MS: "120000" })).toBe(120000);
   });
 });

@@ -22,11 +22,13 @@ const SWPC_SOURCE_LINK = {
   label: "NOAA SWPC Alert",
 } as const;
 
-const swpcAlertItemSchema = z.object({
-  product_id: z.string().min(1),
-  issue_datetime: z.string().min(1),
-  message: z.string().min(1),
-}).strict();
+const swpcAlertItemSchema = z
+  .object({
+    product_id: z.string().min(1),
+    issue_datetime: z.string().min(1),
+    message: z.string().min(1),
+  })
+  .strict();
 
 function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n/g, "\n");
@@ -105,9 +107,10 @@ function normalizeSwpcAlert(item: z.infer<typeof swpcAlertItemSchema>): Normaliz
   };
 }
 
-export function normalizeSwpcResponse(
-  input: unknown,
-): { signals: NormalizedSignal[]; skipped: { productId: string }[] } {
+export function normalizeSwpcResponse(input: unknown): {
+  signals: NormalizedSignal[];
+  skipped: { productId: string }[];
+} {
   const rawItems = z.array(z.unknown()).parse(input);
   const signals: NormalizedSignal[] = [];
   const skipped: { productId: string }[] = [];

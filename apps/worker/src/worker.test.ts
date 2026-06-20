@@ -34,7 +34,7 @@ function createTestLogger() {
 const testDbEnv = { DATABASE_URL: "postgresql://localhost:5432/test" };
 
 describe("worker runtime", () => {
-  it("registers the usgs ingestion job and logs startup", () => {
+  it("registers the usgs and swpc ingestion jobs and logs startup", () => {
     const { logger, records } = createTestLogger();
     const scheduler: Scheduler = {
       registerIntervalJob: vi.fn(),
@@ -42,22 +42,37 @@ describe("worker runtime", () => {
     };
 
     startWorker({
-      env: { ...testDbEnv, USGS_POLL_INTERVAL_MS: "300000" },
+      env: {
+        ...testDbEnv,
+        USGS_POLL_INTERVAL_MS: "300000",
+        SWPC_POLL_INTERVAL_MS: "600000",
+      },
       logger,
       scheduler,
       signals: new SignalEmitter(),
     });
 
-    expect(scheduler.registerIntervalJob).toHaveBeenCalledWith({
-      name: "usgs-ingestion",
-      intervalMs: 300000,
-      run: expect.any(Function),
-    });
+    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(2);
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        name: "usgs-ingestion",
+        intervalMs: 300000,
+      }),
+    );
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        name: "swpc-ingestion",
+        intervalMs: 600000,
+      }),
+    );
     expect(records).toEqual([
       {
         event: "worker.started",
         metadata: {
           usgsPollIntervalMs: 300000,
+          swpcPollIntervalMs: 600000,
         },
       },
     ]);
