@@ -4,7 +4,8 @@ import postgres, { type Sql } from "postgres";
 import { schema } from "./schema";
 
 export { schema };
-export { watchedRegion } from "./app-schema";
+export { watchedRegion, watchedRegionSnapshot } from "./app-schema";
+export type { SnapshotSignalEntry } from "./app-schema";
 export { signal } from "./signal-schema";
 export { providerFreshness } from "./signal-schema";
 export {
@@ -15,6 +16,8 @@ export {
   queryProviderFreshness,
 } from "./signal-repo";
 export type { SignalQueryFilters, SignalFeedFilters, ProviderFreshness } from "./signal-repo";
+export { upsertWatchedRegionSnapshot } from "./snapshot-repo";
+export type { WatchedRegionSnapshot } from "./snapshot-repo";
 
 export type DatabaseConnection = {
   db: PostgresJsDatabase<typeof schema>;
