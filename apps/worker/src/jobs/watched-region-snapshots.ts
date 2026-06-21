@@ -1,5 +1,5 @@
 import { querySignals, upsertWatchedRegionSnapshot, watchedRegion } from "@oracle/db";
-import { getRegionMemberCountryIds, matchSignalsToRegion, scoreSignals } from "@oracle/domain";
+import { getRegionMemberCountryIds, isRegionId, matchSignalsToRegion, scoreSignals } from "@oracle/domain";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { schema } from "@oracle/db";
 import type { ScheduledJob } from "../scheduler";
@@ -10,9 +10,13 @@ const SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000;
 
 const WINDOW_HOURS = 72;
 
-function snapshotId(watchedRegionId: string, takenAt: Date): string {
+function snapshotBucketStart(takenAt: Date): Date {
   const bucket = Math.floor(takenAt.getTime() / SNAPSHOT_INTERVAL_MS) * SNAPSHOT_INTERVAL_MS;
-  return `${watchedRegionId}:${new Date(bucket).toISOString()}`;
+  return new Date(bucket);
+}
+
+function snapshotId(watchedRegionId: string, takenAt: Date): string {
+  return `${watchedRegionId}:${snapshotBucketStart(takenAt).toISOString()}`;
 }
 
 export type WatchedRegionSnapshotJobDeps = {
@@ -37,21 +41,29 @@ export function createWatchedRegionSnapshotJob(
       }
 
       const now = new Date();
+      const takenAt = snapshotBucketStart(now);
       const since = new Date(now.getTime() - WINDOW_HOURS * 60 * 60 * 1000);
       const allSignals = await querySignals(db, { since });
       let successCount = 0;
 
       for (const row of watchedRows) {
         try {
-          const memberCountryIds = getRegionMemberCountryIds(row.regionId as never);
+          if (!isRegionId(row.regionId)) {
+            logger.warn("snapshot.region.unknown", {
+              jobName: "watched-region-snapshots",
+              metadata: { watchedRegionId: row.id, regionId: row.regionId },
+            });
+            continue;
+          }
+          const memberCountryIds = getRegionMemberCountryIds(row.regionId);
           const regionSignals = matchSignalsToRegion(allSignals, memberCountryIds);
           const risk = scoreSignals(regionSignals);
           // ponytail: serial per-region loop, parallelize if latency exceeds 5-min budget.
 
           await upsertWatchedRegionSnapshot(db, {
-            id: snapshotId(row.id, now),
+            id: snapshotId(row.id, takenAt),
             watchedRegionId: row.id,
-            takenAt: now,
+            takenAt,
             riskScore: risk.score,
             riskLevel: risk.level,
             worstSeverity: risk.worstSeverity,

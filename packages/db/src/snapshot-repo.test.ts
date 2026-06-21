@@ -1,8 +1,9 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { user } from "./auth-schema";
 import { createDatabaseConnection } from "./index";
-import { watchedRegionSnapshot } from "./app-schema";
+import { watchedRegion, watchedRegionSnapshot } from "./app-schema";
 import { upsertWatchedRegionSnapshot, type WatchedRegionSnapshot } from "./snapshot-repo";
 import type { schema } from "./schema";
 
@@ -26,6 +27,17 @@ afterAll(async () => {
 beforeEach(async () => {
   if (!db) return;
   await db.execute(sql`BEGIN`);
+  await db.insert(user).values({
+    id: "test-user-id",
+    name: "test",
+    email: "test@example.com",
+  });
+  await db.insert(watchedRegion).values({
+    id: "test-wr-id",
+    userId: "test-user-id",
+    regionId: "test-region",
+    createdAt: new Date(),
+  });
 });
 
 afterEach(async () => {
