@@ -13,6 +13,7 @@ import { createSwpcIngestionJob } from "./jobs/swpc-ingestion";
 import { createOpenweatherIngestionJob } from "./jobs/openweather-ingestion";
 import { createWatchedRegionSnapshotJob } from "./jobs/watched-region-snapshots";
 import { createChangeReportJob } from "./jobs/change-reports";
+import { createRawPayloadCleanupJob } from "./jobs/raw-payload-cleanup";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -91,6 +92,13 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
   });
 
   scheduler.registerIntervalJob(changeReportJob);
+
+  const rawPayloadCleanupJob = createRawPayloadCleanupJob({
+    db: dbConnection.db,
+    logger,
+  });
+
+  scheduler.registerIntervalJob(rawPayloadCleanupJob);
 
   logger.info("worker.started", {
     metadata: {

@@ -54,7 +54,7 @@ describe("worker runtime", () => {
       signals: new SignalEmitter(),
     });
 
-    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(5);
+    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(6);
     expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -88,6 +88,13 @@ describe("worker runtime", () => {
       expect.objectContaining({
         name: "change-reports",
         intervalMs: 300000,
+      }),
+    );
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      6,
+      expect.objectContaining({
+        name: "raw-payload-cleanup",
+        intervalMs: 3600000,
       }),
     );
     expect(records).toEqual([

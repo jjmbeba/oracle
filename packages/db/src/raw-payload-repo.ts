@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { lt } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { SignalCategory } from "@oracle/domain";
 import { providerPayload } from "./raw-payload-schema";
@@ -52,4 +53,15 @@ export async function insertRawPayload(
     })
     .returning({ id: providerPayload.id });
   return { inserted: !!row };
+}
+
+export async function deleteExpiredRawPayloads(
+  db: Database,
+  cutoff: Date,
+): Promise<{ deletedCount: number }> {
+  const deleted = await db
+    .delete(providerPayload)
+    .where(lt(providerPayload.fetchedAt, cutoff))
+    .returning({ id: providerPayload.id });
+  return { deletedCount: deleted.length };
 }
