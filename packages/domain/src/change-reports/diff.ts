@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { signalCategorySchema, signalSeveritySchema } from "../signals/schemas";
+import { riskLevelSchema } from "../risk/scoring";
 import type { SignalCategory, SignalSeverity } from "../signals";
 import type { RiskLevel } from "../risk/scoring";
 
@@ -79,3 +82,40 @@ export function diffSnapshots(
 
   return { newSignals, expiredSignals, severityChanges, riskMovement };
 }
+
+export const changeReportEntrySchema = z
+  .object({
+    dedupeKey: z.string().trim().min(1),
+    severity: signalSeveritySchema,
+    category: signalCategorySchema,
+    occurredAt: z.string().nullable(),
+  })
+  .strict();
+
+export const severityChangeEntrySchema = z
+  .object({
+    dedupeKey: z.string().trim().min(1),
+    severity: signalSeveritySchema,
+    category: signalCategorySchema,
+    occurredAt: z.string().nullable(),
+    fromSeverity: signalSeveritySchema,
+  })
+  .strict();
+
+export const riskMovementSchema = z
+  .object({
+    fromScore: z.number().min(0).max(100),
+    toScore: z.number().min(0).max(100),
+    fromLevel: riskLevelSchema,
+    toLevel: riskLevelSchema,
+  })
+  .strict();
+
+export const changeReportSchema = z
+  .object({
+    newSignals: z.array(changeReportEntrySchema),
+    expiredSignals: z.array(changeReportEntrySchema),
+    severityChanges: z.array(severityChangeEntrySchema),
+    riskMovement: riskMovementSchema.nullable(),
+  })
+  .strict();

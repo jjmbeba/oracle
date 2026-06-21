@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { ProviderFreshness } from "@oracle/db";
 import type { NormalizedSignal } from "@oracle/domain";
 import { app, createApp } from "./app";
+import {
+  dossierResponseSchema,
+  regionActiveSignalsResponseSchema,
+  regionRiskResponseSchema,
+} from "./regions";
+import { signalFeedResponseSchema, signalMapResponseSchema } from "./signals";
 import type { SignalFeedStore } from "./signals";
 
 function makeSignal(overrides: Partial<NormalizedSignal>): NormalizedSignal {
@@ -801,5 +807,76 @@ describe("region risk", () => {
     const body = await response.json();
 
     expect(body.error.code).toBe("region_not_found");
+  });
+});
+
+describe("contract", () => {
+  it("dossier response matches schema", async () => {
+    const response = await app.request("/regions/country:ke/dossier");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(dossierResponseSchema.safeParse(body).success).toBe(true);
+  });
+
+  it("feed response matches schema", async () => {
+    const signal = makeSignal({ title: "Test for contract" });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(signalFeedResponseSchema.safeParse(body).success).toBe(true);
+  });
+
+  it("map response matches schema", async () => {
+    const signal = makeSignal({
+      title: "Map test",
+      scope: { kind: "point", coordinates: [0, 0] },
+    });
+    const testApp = signalFeedApp([signal], null);
+
+    const response = await testApp.request("/signals/map?category=earthquake");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(signalMapResponseSchema.safeParse(body).success).toBe(true);
+  });
+
+  it("active-signals response matches schema", async () => {
+    const signal = makeSignal({
+      title: "Active test",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const testApp = signalFeedApp([], null, [signal]);
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(regionActiveSignalsResponseSchema.safeParse(body).success).toBe(true);
+  });
+
+  it("risk response matches schema", async () => {
+    const signals = [
+      makeSignal({
+        title: "Risk test",
+        severity: "moderate",
+        scope: { kind: "region", regionId: "country:ke" },
+      }),
+    ];
+    const testApp = signalFeedApp([], null, signals);
+
+    const response = await testApp.request("/regions/country:ke/risk");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(regionRiskResponseSchema.safeParse(body).success).toBe(true);
   });
 });

@@ -1,8 +1,14 @@
 import type { ProviderFreshness, schema } from "@oracle/db";
 import { queryProviderFreshness, querySignalFeed, querySignals } from "@oracle/db";
-import { signalCategories, type NormalizedSignal, type SignalCategory } from "@oracle/domain";
+import {
+  normalizedSignalSchema,
+  signalCategories,
+  type NormalizedSignal,
+  type SignalCategory,
+} from "@oracle/domain";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Hono } from "hono";
+import { z } from "zod";
 
 type Database = PostgresJsDatabase<typeof schema>;
 
@@ -31,6 +37,53 @@ type FreshnessResponse = {
   category: SignalCategory;
   lastSuccessfulPollAt: string;
 };
+
+export const freshnessEntrySchema = z
+  .object({
+    provider: z.string().trim().min(1),
+    category: z.string().trim().min(1),
+    lastSuccessfulPollAt: z.string(),
+  })
+  .strict();
+
+export const signalFeedResponseSchema = z
+  .object({
+    signals: z.array(normalizedSignalSchema as z.ZodType<NormalizedSignal>),
+    freshness: z.array(freshnessEntrySchema as z.ZodType),
+  })
+  .strict();
+
+const pointFeatureSchema = z
+  .object({
+    type: z.literal("Feature"),
+    id: z.string(),
+    geometry: z
+      .object({
+        type: z.literal("Point"),
+        coordinates: z.tuple([z.number(), z.number()]),
+      })
+      .strict(),
+    properties: z
+      .object({
+        provider: z.string(),
+        category: z.string(),
+        title: z.string(),
+        severity: z.string(),
+        confidence: z.string(),
+        effectiveAt: z.string(),
+        sourceLinkUrl: z.string().optional(),
+        sourceLinkLabel: z.string().optional(),
+      })
+      .strict(),
+  })
+  .strict();
+
+export const signalMapResponseSchema = z
+  .object({
+    type: z.literal("FeatureCollection"),
+    features: z.array(pointFeatureSchema as z.ZodType),
+  })
+  .strict();
 
 function parseCategoryParam(raw: string | undefined): SignalCategory | null {
   if (typeof raw === "string" && (signalCategories as readonly string[]).includes(raw)) {
