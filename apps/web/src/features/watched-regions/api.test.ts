@@ -200,4 +200,22 @@ describe("fetchChangeReport", () => {
       }),
     ).rejects.toThrow("Change report returned an invalid response");
   });
+
+  it("rejects a report with invalid enum values", async () => {
+    await expect(
+      fetchChangeReport("country:ke", async () => {
+        return Response.json({
+          changeReport: {
+            generatedAt: "2026-01-01T00:00:00.000Z",
+            newSignals: [
+              { dedupeKey: "x", severity: "banana", category: "earthquake", occurredAt: null },
+            ],
+            expiredSignals: [],
+            severityChanges: [],
+            riskMovement: null,
+          },
+        });
+      }),
+    ).rejects.toThrow("Change report returned an invalid response");
+  });
 });

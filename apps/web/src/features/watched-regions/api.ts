@@ -1,6 +1,10 @@
 import type { RegionSearchResult } from "../regions/api";
-import type { SignalSeverity, SignalCategory } from "../signals/types";
+import { isSignalSeverity, isSignalCategory, type SignalSeverity, type SignalCategory } from "../signals/types";
 import type { RiskLevel } from "@oracle/domain";
+
+function isRiskLevel(value: unknown): value is RiskLevel {
+  return value === "quiet" || value === "watch" || value === "elevated" || value === "high" || value === "critical";
+}
 
 export const WATCHED_REGIONS_PATH = "/api/watched-regions";
 export const MAX_WATCHED_REGIONS = 10;
@@ -93,7 +97,7 @@ export async function fetchWatchedRegions(
     throw new Error(`Failed to fetch watched regions: ${response.status}`);
   }
 
-  const body: unknown = await response.json();
+  const body: unknown = await safeJson(response);
 
   if (!isWatchedRegionsResponse(body)) {
     throw new Error("Watched regions returned an invalid response");
@@ -117,7 +121,7 @@ export async function watchRegion(
     throw new Error(getErrorMessage(body));
   }
 
-  const body: unknown = await response.json();
+  const body: unknown = await safeJson(response);
 
   if (!isWatchRegionResponse(body)) {
     throw new Error("Watch region returned an invalid response");
@@ -171,14 +175,14 @@ function isChangeReportEntry(value: unknown): value is ChangeReportEntry {
   if (!isRecord(value)) return false;
   return (
     typeof value.dedupeKey === "string" &&
-    typeof value.severity === "string" &&
-    typeof value.category === "string" &&
+    isSignalSeverity(value.severity) &&
+    isSignalCategory(value.category) &&
     (value.occurredAt === null || typeof value.occurredAt === "string")
   );
 }
 
 function isSeverityChangeEntry(value: unknown): value is SeverityChangeEntry {
-  return isChangeReportEntry(value) && typeof (value as Record<string, unknown>).fromSeverity === "string";
+  return isChangeReportEntry(value) && isSignalSeverity((value as Record<string, unknown>).fromSeverity);
 }
 
 function isRiskMovement(value: unknown): value is RiskMovement {
@@ -186,8 +190,8 @@ function isRiskMovement(value: unknown): value is RiskMovement {
   return (
     typeof value.fromScore === "number" &&
     typeof value.toScore === "number" &&
-    typeof value.fromLevel === "string" &&
-    typeof value.toLevel === "string"
+    isRiskLevel(value.fromLevel) &&
+    isRiskLevel(value.toLevel)
   );
 }
 
@@ -212,7 +216,7 @@ export async function fetchChangeReport(
     throw new Error(getErrorMessage(body));
   }
 
-  const body: unknown = await response.json();
+  const body: unknown = await safeJson(response);
 
   if (!isRecord(body)) throw new Error("Change report returned an invalid response");
   if (body.changeReport === null) return null;
