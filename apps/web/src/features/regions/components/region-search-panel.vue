@@ -4,9 +4,13 @@ import type { RegionSearchResult } from "../api";
 import type { WatchedRegion } from "../../watched-regions/api";
 import { useRegionSearchQuery } from "../queries";
 import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected } from "../region-ui";
+import { SIGNAL_CATEGORIES, type SignalCategory } from "../../signals/types";
+import SignalCategoryToggles from "../../signals/components/signal-category-toggles.vue";
 
 const searchInput = ref("");
 const watchedOpen = ref(true);
+const filtersOpen = ref(false);
+const totalCategories = SIGNAL_CATEGORIES.length;
 
 const regionSearchQuery = useRegionSearchQuery(searchInput);
 
@@ -23,11 +27,13 @@ const hasNoMatches = computed(
 const props = defineProps<{
   selectedRegion: RegionSearchResult | null;
   watchedRegions: readonly WatchedRegion[];
+  activeCategories: readonly SignalCategory[];
 }>();
 
 const emit = defineEmits<{
   selectRegion: [region: RegionSearchResult];
   unwatchRegion: [regionId: string];
+  "update:activeCategories": [categories: SignalCategory[]];
 }>();
 
 const searchStatusLabel = computed(() => {
@@ -115,6 +121,34 @@ function getWatchedKind(region: WatchedRegion): string {
       </div>
     </div>
 
+    <div class="filters-section">
+      <button
+        class="filters-header"
+        type="button"
+        :aria-expanded="filtersOpen"
+        aria-controls="signal-category-filters"
+        @click="filtersOpen = !filtersOpen"
+      >
+        <span class="filters-label-wrap">
+          <span class="filters-label">Show</span>
+          <span class="filters-fraction">{{ activeCategories.length }} / {{ totalCategories }}</span>
+        </span>
+        <span class="filters-toggle">{{ filtersOpen ? "−" : "+" }}</span>
+      </button>
+
+      <div
+        v-if="filtersOpen"
+        id="signal-category-filters"
+        class="category-filters"
+        aria-label="Signal category filters"
+      >
+        <signal-category-toggles
+          :active-categories="activeCategories"
+          @update:active-categories="(cats) => emit('update:activeCategories', cats)"
+        />
+      </div>
+    </div>
+
     <form class="search-form" role="search" @submit.prevent="selectFirstRegion">
       <label class="sr-only" for="region-search">Search supported regions</label>
       <input
@@ -127,7 +161,7 @@ function getWatchedKind(region: WatchedRegion): string {
       <button type="submit">Go</button>
     </form>
 
-    <div aria-live="polite">
+    <div aria-live="polite" class="results-region">
       <p v-if="regionSearchQuery.isError.value" class="state-copy alert">
         Region search is temporarily unavailable.
       </p>
@@ -166,6 +200,7 @@ function getWatchedKind(region: WatchedRegion): string {
   position: absolute;
   z-index: 5;
   top: 16px;
+  bottom: 16px;
   left: 16px;
   display: flex;
   flex-direction: column;
@@ -177,6 +212,7 @@ function getWatchedKind(region: WatchedRegion): string {
   color: $text-primary;
   box-shadow: $shadow-panel;
   backdrop-filter: blur(12px);
+  overflow: hidden;
 
   @media (max-width: 640px) {
     inset: 12px 12px auto;
@@ -189,6 +225,62 @@ function getWatchedKind(region: WatchedRegion): string {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.filters-section {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $border-default;
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: $text-primary;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  &:hover {
+    color: $text-heading;
+  }
+}
+
+.filters-label-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.filters-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $text-secondary;
+}
+
+.filters-fraction {
+  font-size: 11px;
+  color: $text-meta;
+}
+
+.filters-toggle {
+  font-size: 14px;
+  color: $text-meta;
+  line-height: 1;
+}
+
+.category-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .panel-label {
@@ -263,11 +355,18 @@ input:focus-visible {
   }
 }
 
+.results-region {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .result-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 300px;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding-right: 8px;
@@ -375,6 +474,9 @@ input:focus-visible {
   flex-direction: column;
   gap: 4px;
   margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  @include thin-hover-scrollbar;
 }
 
 .watched-item {

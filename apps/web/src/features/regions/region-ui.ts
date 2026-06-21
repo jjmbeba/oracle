@@ -1,5 +1,7 @@
 import type { RegionSearchResult, CountryDossierFacts, GroupDossierFacts } from "./api";
 import type { RiskLevel } from "@oracle/domain";
+import { severityColor, type SignalSeverity } from "../signals/types";
+import { formatFeedFreshness } from "../signals/format";
 
 export function getRegionKindLabel(region: RegionSearchResult): string {
   if (region.kind === "country") {
@@ -120,15 +122,43 @@ export function riskLevelLabel(level: RiskLevel): string {
   return RISK_LEVEL_LABELS[level];
 }
 
-// ponytail: reuses the severity palette so the visual vocabulary is consistent across the dashboard.
-const RISK_LEVEL_COLORS: Record<RiskLevel, string> = {
-  quiet: "#7da4b8",
-  watch: "#8bbf7a",
-  elevated: "#e0c05a",
-  high: "#d48040",
-  critical: "#c05050",
+const RISK_TO_SEVERITY: Record<RiskLevel, SignalSeverity> = {
+  quiet: "minor",
+  watch: "moderate",
+  elevated: "significant",
+  high: "severe",
+  critical: "extreme",
 };
 
 export function riskLevelColor(level: RiskLevel): string {
-  return RISK_LEVEL_COLORS[level];
+  return severityColor(RISK_TO_SEVERITY[level]);
+}
+
+export type DossierStatusInput = {
+  readonly regionLabel: string;
+  readonly isWatched: boolean;
+  readonly activeCount: number;
+  readonly lastUpdatedAt: string | null;
+  readonly riskScore: number;
+  readonly riskLevel: RiskLevel;
+};
+
+export function buildDossierStatusStrip(input: DossierStatusInput): readonly string[] {
+  const parts: string[] = [input.regionLabel];
+
+  if (input.activeCount > 0) {
+    parts.push(`${input.activeCount} active`);
+  }
+
+  if (input.isWatched) {
+    parts.push("Watched");
+  }
+
+  if (input.lastUpdatedAt) {
+    parts.push(formatFeedFreshness(input.lastUpdatedAt));
+  }
+
+  parts.push(`Risk ${input.riskScore}/100 ${riskLevelLabel(input.riskLevel)}`);
+
+  return parts;
 }

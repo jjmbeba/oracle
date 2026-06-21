@@ -126,8 +126,8 @@ function handleItemClick(signal: SignalFeedItem) {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 44px;
-  min-height: 44px;
+  height: 48px;
+  min-height: 48px;
   padding: 0 14px;
   border-top: 1px solid $border-default;
   background: $bg-panel;

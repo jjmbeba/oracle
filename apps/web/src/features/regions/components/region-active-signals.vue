@@ -62,7 +62,7 @@ function isGlobal(signal: SignalFeedItem): boolean {
 }
 
 const safeSourceHref = (sourceLink: SignalFeedItem["sourceLink"]): string | undefined =>
-  sourceLink ? safeExternalUrl(sourceLink.url) ?? undefined : undefined;
+  sourceLink ? (safeExternalUrl(sourceLink.url) ?? undefined) : undefined;
 
 const CATEGORY_LABEL: Record<CategoryKey, string> = {
   earthquake: "Earthquakes",
@@ -91,10 +91,7 @@ const CATEGORY_LABEL: Record<CategoryKey, string> = {
               v-for="signal in group.items"
               :key="`${signal.provider}-${signal.effectiveAt}-${signal.title}`"
               class="signal-row"
-              :class="{
-                'is-global': isGlobal(signal),
-                pulse: signal.severity === 'severe' || signal.severity === 'extreme',
-              }"
+              :class="{ 'is-global': isGlobal(signal) }"
             >
               <span
                 class="severity-rail"
@@ -150,27 +147,6 @@ const CATEGORY_LABEL: Record<CategoryKey, string> = {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid $border-default;
-  animation: fade-in 200ms ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .active-signals {
-    animation: none;
-  }
-  .signal-row.pulse .severity-rail {
-    animation: none;
-  }
 }
 
 .section-header {
@@ -263,20 +239,6 @@ const CATEGORY_LABEL: Record<CategoryKey, string> = {
   border-radius: 0;
 }
 
-.signal-row.pulse .severity-rail {
-  animation: rail-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes rail-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
-
 .signal-body {
   display: flex;
   flex-direction: column;
@@ -304,6 +266,7 @@ const CATEGORY_LABEL: Record<CategoryKey, string> = {
 
 .signal-title {
   font-size: 12px;
+  font-weight: 500;
   color: $text-primary;
   text-decoration: none;
   line-height: 1.35;
