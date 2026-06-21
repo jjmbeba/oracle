@@ -1,12 +1,12 @@
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { upsertProviderFreshness, upsertSignal } from "@oracle/db";
+import { insertRawPayload, upsertProviderFreshness, upsertSignal } from "@oracle/db";
 import type { schema } from "@oracle/db";
 import type { NormalizedRejection, NormalizedSignal, SignalCategory } from "@oracle/domain";
 import type { ScheduledJob } from "../scheduler";
 import type { WorkerLogger } from "../logger";
-import type { JsonFetchResult } from "../providers/fetch-json";
+import type { JsonFetchWithRaw } from "../providers/fetch-json";
 
-export type ProviderFetcher = () => Promise<JsonFetchResult>;
+export type ProviderFetcher = () => Promise<JsonFetchWithRaw>;
 
 export type ProviderNormalizer = (data: unknown) => {
   signals: NormalizedSignal[];
@@ -39,7 +39,7 @@ export function createIngestionJob(
     name,
     intervalMs: config.intervalMs,
     async run() {
-      let fetchResult: JsonFetchResult;
+      let fetchResult: JsonFetchWithRaw;
       try {
         fetchResult = await fetchData();
       } catch (error: unknown) {
@@ -50,9 +50,11 @@ export function createIngestionJob(
         return;
       }
 
+      const { data, rawFetches } = fetchResult;
+
       let normalized: ReturnType<ProviderNormalizer>;
       try {
-        normalized = normalize(fetchResult.data);
+        normalized = normalize(data);
       } catch (error: unknown) {
         logger.error(`${logPrefix}.normalize.failed`, {
           jobName: name,
@@ -84,6 +86,28 @@ export function createIngestionJob(
             jobName: name,
             error,
             metadata: { dedupeKey: signal.dedupeKey },
+          });
+        }
+      }
+
+      const fetchedAt = new Date();
+
+      for (const raw of rawFetches) {
+        try {
+          await insertRawPayload(db, {
+            id: crypto.randomUUID(),
+            provider,
+            category,
+            sourceUrl: raw.url,
+            jobName: name,
+            httpStatus: raw.response.status,
+            payload: raw.data,
+            fetchedAt,
+          });
+        } catch (error: unknown) {
+          logger.warn(`${logPrefix}.raw_payload.persist_failed`, {
+            jobName: name,
+            error,
           });
         }
       }

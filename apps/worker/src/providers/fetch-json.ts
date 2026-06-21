@@ -1,6 +1,17 @@
+export type RawFetch = {
+  url: string;
+  data: unknown;
+  response: Response;
+};
+
 export type JsonFetchResult = {
   data: unknown;
   response: Response;
+};
+
+export type JsonFetchWithRaw = {
+  data: unknown;
+  rawFetches: readonly RawFetch[];
 };
 
 export type FetchJsonOptions = {

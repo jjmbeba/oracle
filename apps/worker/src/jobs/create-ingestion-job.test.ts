@@ -4,7 +4,7 @@ import type { schema } from "@oracle/db";
 import type { NormalizedSignal } from "@oracle/domain";
 import { createIngestionJob } from "./create-ingestion-job";
 import type { ProviderFetcher, ProviderNormalizer } from "./create-ingestion-job";
-import type { JsonFetchResult } from "../providers/fetch-json";
+import type { JsonFetchWithRaw } from "../providers/fetch-json";
 import type { WorkerLogger } from "../logger";
 
 type LogRecord = {
@@ -48,9 +48,10 @@ const validSignal: NormalizedSignal = {
 vi.mock("@oracle/db", () => ({
   upsertSignal: vi.fn(),
   upsertProviderFreshness: vi.fn(),
+  insertRawPayload: vi.fn(),
 }));
 
-import { upsertSignal, upsertProviderFreshness } from "@oracle/db";
+import { insertRawPayload, upsertSignal, upsertProviderFreshness } from "@oracle/db";
 
 function buildConfig(
   overrides: Partial<{
@@ -69,9 +70,9 @@ function buildConfig(
     category: overrides.category ?? ("earthquake" as const),
     fetchData:
       overrides.fetchData ??
-      (async (): Promise<JsonFetchResult> => ({
+      (async (): Promise<JsonFetchWithRaw> => ({
         data: { ok: true },
-        response: { ok: true } as Response,
+        rawFetches: [],
       })),
     normalize: overrides.normalize ?? (() => ({ signals: [validSignal], skipped: [] })),
     logPrefix: overrides.logPrefix ?? "test",
@@ -101,9 +102,9 @@ describe("createIngestionJob", () => {
 
   it("fetches, normalizes, upserts signals, and records freshness", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: { anything: 1 },
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const normalize = vi.fn(() => ({ signals: [validSignal], skipped: [] }));
@@ -145,9 +146,9 @@ describe("createIngestionJob", () => {
 
   it("logs each rejection from the normalizer at warn level", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: {},
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const rejection = {
@@ -229,9 +230,9 @@ describe("createIngestionJob", () => {
 
   it("logs normalize failure without crashing", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: { invalid: true },
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const normalize = vi.fn(() => {
@@ -251,9 +252,9 @@ describe("createIngestionJob", () => {
 
   it("continues upsert loop when one signal fails and still records freshness", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: {},
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const signals = [
@@ -290,9 +291,9 @@ describe("createIngestionJob", () => {
 
   it("logs freshness failure without aborting the job", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: {},
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const normalize = vi.fn(() => ({ signals: [validSignal], skipped: [] }));
@@ -311,9 +312,9 @@ describe("createIngestionJob", () => {
 
   it("passes the configured provider and category into the freshness call", async () => {
     const fetchData = vi.fn(
-      async (): Promise<JsonFetchResult> => ({
+      async (): Promise<JsonFetchWithRaw> => ({
         data: {},
-        response: { ok: true } as Response,
+        rawFetches: [],
       }),
     );
     const normalize = vi.fn(() => ({ signals: [], skipped: [] }));
@@ -344,5 +345,64 @@ describe("createIngestionJob", () => {
         category: "space-weather",
       }),
     );
+  });
+
+  it("persists raw fetches and continues on insert failure", async () => {
+    const fetchData = vi.fn(
+      async (): Promise<JsonFetchWithRaw> => ({
+        data: {},
+        rawFetches: [
+          { url: "https://example.com/a", data: { a: 1 }, response: { ok: true, status: 200 } as Response },
+          { url: "https://example.com/b", data: { b: 2 }, response: { ok: true, status: 200 } as Response },
+        ],
+      }),
+    );
+    const normalize = vi.fn(() => ({ signals: [validSignal], skipped: [] }));
+
+    vi.mocked(upsertSignal).mockResolvedValue(validSignal);
+    vi.mocked(insertRawPayload)
+      .mockRejectedValueOnce(new Error("persist failed"))
+      .mockResolvedValue({ inserted: true });
+    vi.mocked(upsertProviderFreshness).mockResolvedValue({
+      provider: "test-provider",
+      category: "earthquake",
+      lastSuccessfulPollAt: new Date(),
+    });
+
+    const { logger, records } = createTestLogger();
+    const job = createIngestionJob(buildConfig({ fetchData, normalize }), { db: mockDb, logger });
+
+    await job.run();
+
+    expect(insertRawPayload).toHaveBeenCalledTimes(2);
+    expect(insertRawPayload).toHaveBeenNthCalledWith(
+      1,
+      mockDb,
+      expect.objectContaining({
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        ),
+        provider: "test-provider",
+        category: "earthquake",
+        sourceUrl: "https://example.com/a",
+        jobName: "test-ingestion",
+        httpStatus: 200,
+        payload: { a: 1 },
+        fetchedAt: expect.any(Date),
+      }),
+    );
+    expect(insertRawPayload).toHaveBeenNthCalledWith(
+      2,
+      mockDb,
+      expect.objectContaining({
+        sourceUrl: "https://example.com/b",
+        payload: { b: 2 },
+        fetchedAt: expect.any(Date),
+      }),
+    );
+    expect(upsertSignal).toHaveBeenCalledTimes(1);
+    expect(upsertProviderFreshness).toHaveBeenCalledTimes(1);
+    expect(records.some((r) => r.event === "test.raw_payload.persist_failed")).toBe(true);
+    expect(records.some((r) => r.event === "test.ingestion.complete")).toBe(true);
   });
 });
