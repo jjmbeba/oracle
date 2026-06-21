@@ -38,7 +38,8 @@ export const matchSignalsToRegion = (
           memberCountryIds,
         );
       case "geometry":
-        return true;
+        // TODO: replace with polygon/region-intersection matching.
+        return false;
     }
   });
 };

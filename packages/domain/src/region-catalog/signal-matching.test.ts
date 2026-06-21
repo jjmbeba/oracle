@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CountryId, NormalizedSignal } from "./types";
+import type { CountryId } from "./types";
+import type { NormalizedSignal } from "../signals/schemas";
 import { matchSignalsToRegion } from "./signal-matching";
 
 const makeSignal = (overrides: Partial<NormalizedSignal> = {}): NormalizedSignal => ({
@@ -57,7 +58,7 @@ describe("matchSignalsToRegion", () => {
     expect(matched).toEqual([nairobiSignal]);
   });
 
-  it("includes geometry signals conservatively (deferred polygon matching)", () => {
+  it("excludes geometry signals (deferred polygon matching)", () => {
     const geomSignal = makeSignal({
       scope: {
         kind: "geometry",
@@ -76,7 +77,7 @@ describe("matchSignalsToRegion", () => {
       },
     });
     const matched = matchSignalsToRegion([geomSignal], [JAPAN]);
-    expect(matched).toEqual([geomSignal]);
+    expect(matched).toEqual([]);
   });
 
   it("treats point signals as unmatched when every member country has no bounds", () => {

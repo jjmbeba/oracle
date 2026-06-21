@@ -9,7 +9,7 @@ export type SignalTooltipInteraction = {
 
 export type SignalTooltipHandlers = {
   readonly onShow: (feature: SignalGeoJsonFeature) => void;
-  readonly onHide: (feature: SignalGeoJsonFeature) => void;
+  readonly onHide: () => void;
 };
 
 export function useSignalLayerTooltips(
@@ -29,12 +29,10 @@ export function useSignalLayerTooltips(
     handlers.onShow(feature);
   };
 
-  const leaveHandler = (e: MapMouseEvent & { features?: MapGeoJSONFeature[] }): void => {
-    const feature = e.features?.[0] as SignalGeoJsonFeature | undefined;
-    if (!feature) return;
+  const leaveHandler = (): void => {
     const m = map.value;
     if (m) m.getCanvas().style.cursor = "";
-    handlers.onHide(feature);
+    handlers.onHide();
   };
 
   function register(category: SignalCategory): void {
@@ -46,8 +44,8 @@ export function useSignalLayerTooltips(
     registered.add(category);
   }
 
-  function unregister(category: SignalCategory): void {
-    const m = map.value;
+  function unregister(category: SignalCategory, targetMap: Map | null = map.value): void {
+    const m = targetMap;
     if (!m || !registered.has(category)) return;
     const lid = signalLayerId(category);
     m.off("mouseenter", lid, enterHandler);
@@ -56,11 +54,12 @@ export function useSignalLayerTooltips(
   }
 
   function unregisterAll(): void {
-    if (!boundMap) return;
+    const m = boundMap;
+    if (!m) return;
     for (const cat of registered) {
-      unregister(cat);
+      unregister(cat, m);
     }
-    boundMap.getCanvas().style.cursor = "";
+    m.getCanvas().style.cursor = "";
     registered.clear();
   }
 

@@ -6,6 +6,7 @@ import {
   matchSignalsToRegion,
   searchRegions,
   toRegionSearchResult,
+  type SignalCategory,
 } from "@oracle/domain";
 import { Hono } from "hono";
 import { SIGNAL_WINDOW_MS, type SignalFeedStore } from "./signals";
@@ -90,14 +91,19 @@ export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOpti
     const allSignals = await store.queryAllInWindow(since);
     const signals = matchSignalsToRegion(allSignals, memberCountryIds);
 
-    const distinctProviders = [...new Set(signals.map((s) => s.provider))];
+    const seen = new Set<string>();
+    const providerCategoryPairs: { provider: string; category: SignalCategory }[] = [];
+    for (const s of signals) {
+      const key = `${s.provider}:${s.category}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      providerCategoryPairs.push({ provider: s.provider, category: s.category });
+    }
 
     const freshnessEntries = await Promise.all(
-      distinctProviders.map((provider) => {
-        const category = signals.find((s) => s.provider === provider)?.category;
-        if (!category) return Promise.resolve(null);
-        return store.queryFreshness(provider, category);
-      }),
+      providerCategoryPairs.map(({ provider, category }) =>
+        store.queryFreshness(provider, category),
+      ),
     );
 
     const freshness = freshnessEntries.flatMap((entry) =>

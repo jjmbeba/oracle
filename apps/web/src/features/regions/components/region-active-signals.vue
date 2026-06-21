@@ -5,6 +5,7 @@ import type { RegionSearchResult } from "../api";
 import { SEVERITY_STYLES, type SignalSeverity } from "../../signals/types";
 import { formatShortRelativeTime } from "../../signals/format";
 import type { SignalFeedItem } from "../../signals/api";
+import { safeExternalUrl } from "../../../lib/safe-url";
 
 const props = defineProps<{
   selectedRegion: RegionSearchResult;
@@ -60,6 +61,9 @@ function isGlobal(signal: SignalFeedItem): boolean {
   return signal.scope.kind === "global";
 }
 
+const safeSourceHref = (sourceLink: SignalFeedItem["sourceLink"]): string | undefined =>
+  sourceLink ? safeExternalUrl(sourceLink.url) ?? undefined : undefined;
+
 const CATEGORY_LABEL: Record<CategoryKey, string> = {
   earthquake: "Earthquakes",
   weather: "Weather",
@@ -107,9 +111,9 @@ const CATEGORY_LABEL: Record<CategoryKey, string> = {
                     {{ SEVERITY_STYLES[signal.severity].label }}
                   </span>
                   <a
-                    v-if="signal.sourceLink"
+                    v-if="signal.sourceLink && safeSourceHref(signal.sourceLink)"
                     class="signal-title"
-                    :href="signal.sourceLink.url"
+                    :href="safeSourceHref(signal.sourceLink)"
                     rel="noopener noreferrer"
                     target="_blank"
                   >
