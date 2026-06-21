@@ -9,7 +9,7 @@ export type { SnapshotSignalEntry } from "./app-schema";
 export { providerPayload } from "./raw-payload-schema";
 export { signal } from "./signal-schema";
 export { providerFreshness } from "./signal-schema";
-export { insertRawPayload } from "./raw-payload-repo";
+export { deleteExpiredRawPayloads, insertRawPayload } from "./raw-payload-repo";
 export {
   upsertSignal,
   querySignals,
