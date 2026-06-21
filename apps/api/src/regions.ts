@@ -91,14 +91,11 @@ export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOpti
     const allSignals = await store.queryAllInWindow(since);
     const signals = matchSignalsToRegion(allSignals, memberCountryIds);
 
-    const seen = new Set<string>();
-    const providerCategoryPairs: { provider: string; category: SignalCategory }[] = [];
+    const pairsByKey = new Map<string, { provider: string; category: SignalCategory }>();
     for (const s of signals) {
-      const key = `${s.provider}:${s.category}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      providerCategoryPairs.push({ provider: s.provider, category: s.category });
+      pairsByKey.set(`${s.provider}:${s.category}`, { provider: s.provider, category: s.category });
     }
+    const providerCategoryPairs = [...pairsByKey.values()];
 
     const freshnessEntries = await Promise.all(
       providerCategoryPairs.map(({ provider, category }) =>
