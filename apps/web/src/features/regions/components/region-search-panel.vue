@@ -122,7 +122,13 @@ function getWatchedKind(region: WatchedRegion): string {
     </div>
 
     <div class="filters-section">
-      <button class="filters-header" type="button" @click="filtersOpen = !filtersOpen">
+      <button
+        class="filters-header"
+        type="button"
+        :aria-expanded="filtersOpen"
+        aria-controls="signal-category-filters"
+        @click="filtersOpen = !filtersOpen"
+      >
         <span class="filters-label-wrap">
           <span class="filters-label">Show</span>
           <span class="filters-fraction">{{ activeCategories.length }} / {{ totalCategories }}</span>
@@ -130,7 +136,12 @@ function getWatchedKind(region: WatchedRegion): string {
         <span class="filters-toggle">{{ filtersOpen ? "−" : "+" }}</span>
       </button>
 
-      <div v-if="filtersOpen" class="category-filters" aria-label="Signal category filters">
+      <div
+        v-if="filtersOpen"
+        id="signal-category-filters"
+        class="category-filters"
+        aria-label="Signal category filters"
+      >
         <signal-category-toggles
           :active-categories="activeCategories"
           @update:active-categories="(cats) => emit('update:activeCategories', cats)"
