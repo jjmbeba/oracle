@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fetchJson, type JsonFetchResult } from "../fetch-json";
+import { fetchJson, type JsonFetchWithRaw, type RawFetch } from "../fetch-json";
 
 export type OpenweatherCoordinate = { lat: number; lon: number };
 
@@ -76,7 +76,7 @@ export type FetchOpenweatherAlertsOptions = {
 
 export async function fetchOpenweatherAlerts(
   options: FetchOpenweatherAlertsOptions,
-): Promise<JsonFetchResult> {
+): Promise<JsonFetchWithRaw> {
   const fetchFn = options.fetchFn ?? globalThis.fetch;
   const baseUrl = options.baseUrl ?? defaultBaseUrl;
   const coordinates = options.coordinates ?? defaultOpenweatherProbeCoordinates;
@@ -85,12 +85,12 @@ export async function fetchOpenweatherAlerts(
 
   const seen = new Set<string>();
   const fetchedAlerts: OpenweatherFetchedAlert[] = [];
-  let lastResponse: Response | undefined;
+  const rawFetches: RawFetch[] = [];
 
   for (const coord of coordinates) {
     const currentUrl = buildCurrentUrl(baseUrl, coord, options.apiKey);
     const currentResult = await fetchJson(currentUrl, { fetchFn, timeoutMs, errorLabel });
-    lastResponse = currentResult.response;
+    rawFetches.push({ url: currentUrl, data: currentResult.data, response: currentResult.response });
 
     const alertIds = extractAlertIds(currentResult.data);
     const lngLat = coordinatesToLngLat(coord);
@@ -101,7 +101,7 @@ export async function fetchOpenweatherAlerts(
 
       const alertUrl = buildAlertUrl(baseUrl, alertId, options.apiKey);
       const alertResult = await fetchJson(alertUrl, { fetchFn, timeoutMs, errorLabel });
-      lastResponse = alertResult.response;
+      rawFetches.push({ url: alertUrl, data: alertResult.data, response: alertResult.response });
 
       fetchedAlerts.push({
         coordinates: lngLat,
@@ -111,7 +111,6 @@ export async function fetchOpenweatherAlerts(
   }
 
   const payload: OpenweatherFetchPayload = { alerts: fetchedAlerts };
-  const response = lastResponse ?? ({ ok: true } as Response);
 
-  return { data: payload, response };
+  return { data: payload, rawFetches };
 }

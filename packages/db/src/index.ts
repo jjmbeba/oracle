@@ -6,8 +6,10 @@ import { schema } from "./schema";
 export { schema };
 export { changeReport, watchedRegion, watchedRegionSnapshot } from "./app-schema";
 export type { SnapshotSignalEntry } from "./app-schema";
+export { providerPayload } from "./raw-payload-schema";
 export { signal } from "./signal-schema";
 export { providerFreshness } from "./signal-schema";
+export { insertRawPayload } from "./raw-payload-repo";
 export {
   upsertSignal,
   querySignals,
