@@ -764,3 +764,42 @@ describe("region active signals", () => {
     });
   });
 });
+
+describe("region risk", () => {
+  it("returns risk score and level for a valid region", async () => {
+    const signals = [
+      makeSignal({
+        dedupeKey: "sig:risk:ke",
+        title: "Kenya test signal",
+        severity: "moderate",
+        scope: { kind: "region", regionId: "country:ke" },
+      }),
+    ];
+    const testApp = signalFeedApp([], null, signals);
+
+    const response = await testApp.request("/regions/country:ke/risk");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.region.id).toBe("country:ke");
+    expect(body.risk.score).toBeGreaterThanOrEqual(0);
+    expect(body.risk.score).toBeLessThanOrEqual(100);
+    expect(body.risk.level).toMatch(/^(quiet|watch|elevated|high|critical)$/);
+    expect(body.risk.worstSeverity).toBe("moderate");
+    expect(body.risk.contributingSignals).toBe(1);
+  });
+
+  it("returns 404 for an unknown region risk request", async () => {
+    const testApp = signalFeedApp([], null, []);
+
+    const response = await testApp.request("/regions/banana/risk");
+
+    expect(response.status).toBe(404);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("region_not_found");
+  });
+});
