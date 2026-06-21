@@ -1,4 +1,6 @@
 import type { RegionSearchResult } from "../regions/api";
+import type { SignalSeverity, SignalCategory } from "../signals/types";
+import type { RiskLevel } from "@oracle/domain";
 
 export const WATCHED_REGIONS_PATH = "/api/watched-regions";
 export const MAX_WATCHED_REGIONS = 10;
@@ -136,6 +138,87 @@ export async function unwatchRegion(
     const body: unknown = await safeJson(response);
     throw new Error(getErrorMessage(body));
   }
+}
+
+// Change report types (mirrors domain shape — see packages/domain/src/change-reports/diff.ts)
+export type ChangeReportEntry = {
+  readonly dedupeKey: string;
+  readonly severity: SignalSeverity;
+  readonly category: SignalCategory;
+  readonly occurredAt: string | null;
+};
+
+export type SeverityChangeEntry = ChangeReportEntry & {
+  readonly fromSeverity: SignalSeverity;
+};
+
+export type RiskMovement = {
+  readonly fromScore: number;
+  readonly toScore: number;
+  readonly fromLevel: RiskLevel;
+  readonly toLevel: RiskLevel;
+};
+
+export type ChangeReport = {
+  readonly generatedAt: string;
+  readonly newSignals: readonly ChangeReportEntry[];
+  readonly expiredSignals: readonly ChangeReportEntry[];
+  readonly severityChanges: readonly SeverityChangeEntry[];
+  readonly riskMovement: RiskMovement | null;
+};
+
+function isChangeReportEntry(value: unknown): value is ChangeReportEntry {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.dedupeKey === "string" &&
+    typeof value.severity === "string" &&
+    typeof value.category === "string" &&
+    (value.occurredAt === null || typeof value.occurredAt === "string")
+  );
+}
+
+function isSeverityChangeEntry(value: unknown): value is SeverityChangeEntry {
+  return isChangeReportEntry(value) && typeof (value as Record<string, unknown>).fromSeverity === "string";
+}
+
+function isRiskMovement(value: unknown): value is RiskMovement {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.fromScore === "number" &&
+    typeof value.toScore === "number" &&
+    typeof value.fromLevel === "string" &&
+    typeof value.toLevel === "string"
+  );
+}
+
+function isChangeReport(value: unknown): value is ChangeReport {
+  if (!isRecord(value)) return false;
+  if (typeof value.generatedAt !== "string") return false;
+  if (!Array.isArray(value.newSignals) || !value.newSignals.every(isChangeReportEntry)) return false;
+  if (!Array.isArray(value.expiredSignals) || !value.expiredSignals.every(isChangeReportEntry)) return false;
+  if (!Array.isArray(value.severityChanges) || !value.severityChanges.every(isSeverityChangeEntry)) return false;
+  if (value.riskMovement !== null && !isRiskMovement(value.riskMovement)) return false;
+  return true;
+}
+
+export async function fetchChangeReport(
+  regionId: string,
+  fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> = apiFetch,
+): Promise<ChangeReport | null> {
+  const response = await fetcher(`${WATCHED_REGIONS_PATH}/${encodeURIComponent(regionId)}/change-report`);
+
+  if (!response.ok) {
+    const body: unknown = await safeJson(response);
+    throw new Error(getErrorMessage(body));
+  }
+
+  const body: unknown = await response.json();
+
+  if (!isRecord(body)) throw new Error("Change report returned an invalid response");
+  if (body.changeReport === null) return null;
+  if (!isChangeReport(body.changeReport)) throw new Error("Change report returned an invalid response");
+
+  return body.changeReport;
 }
 
 async function safeJson(response: Response): Promise<unknown> {
