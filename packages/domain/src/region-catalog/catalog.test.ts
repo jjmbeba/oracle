@@ -5,6 +5,7 @@ import {
   countryById,
   countryGroups,
   getCountryById,
+  getRegionMemberCountryIds,
   getRegionById,
   isRegionId,
   regionIdSchema,
@@ -92,6 +93,25 @@ describe("region catalog", () => {
     expect(totalsWithNullCentroid.length).toBeLessThan(countries.length);
   });
 
+  it("attaches bounding boxes to countries that have bounds records", () => {
+    const kenya = getCountryById("country:ke");
+    expect(kenya?.bounds).not.toBeNull();
+    expect(kenya?.bounds?.west).toBeCloseTo(33.89);
+    expect(kenya?.bounds?.south).toBeCloseTo(-4.68);
+    expect(kenya?.bounds?.east).toBeCloseTo(41.86);
+    expect(kenya?.bounds?.north).toBeCloseTo(5.51);
+
+    const japan = getCountryById("country:jp");
+    expect(japan?.bounds).not.toBeNull();
+    expect(japan?.bounds?.west).toBeCloseTo(129.41);
+    expect(japan?.bounds?.north).toBeCloseTo(45.55);
+  });
+
+  it("reports null bounds for countries without recorded bounds", () => {
+    const smallIsland = getCountryById("country:ax");
+    expect(smallIsland?.bounds).toBeNull();
+  });
+
   it("keeps derived region indexes consistent", () => {
     expect(regions).toHaveLength(countries.length + countryGroups.length + continents.length);
     expect(regionById.size).toBe(regions.length);
@@ -159,5 +179,31 @@ describe("region catalog", () => {
     expect(memberNames(europe)).toContain("France");
     expect(memberNames(oceania)).toContain("Australia");
     expect(memberNames(antarctica)).toEqual(["Antarctica"]);
+  });
+});
+
+describe("getRegionMemberCountryIds", () => {
+  it("returns the country id itself for a country region", () => {
+    expect(getRegionMemberCountryIds("country:ke")).toEqual(["country:ke"]);
+  });
+
+  it("expands a country group to its member country ids", () => {
+    const members = getRegionMemberCountryIds("group:eastern-africa");
+
+    expect(members.length).toBeGreaterThan(10);
+    expect(members).toContain("country:ke");
+  });
+
+  it("expands a continent to all member country ids", () => {
+    const members = getRegionMemberCountryIds("continent:africa");
+
+    expect(members.length).toBeGreaterThan(40);
+    expect(members).toContain("country:ke");
+    expect(members).toContain("country:za");
+  });
+
+  it("returns an empty array for an unknown region id", () => {
+    expect(getRegionMemberCountryIds("country:xx" as CountryId)).toEqual([]);
+    expect(getRegionMemberCountryIds("group:not-real" as never)).toEqual([]);
   });
 });

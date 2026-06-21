@@ -1,4 +1,4 @@
-import { and, eq, getTableColumns, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, gte, inArray, or, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { normalizedSignalSchema, signalGeometrySchema } from "@oracle/domain";
 import type { NormalizedSignal, SignalCategory, SignalScope } from "@oracle/domain";
@@ -9,6 +9,7 @@ export type SignalQueryFilters = {
   since: Date;
   category?: SignalCategory;
   regionIds?: string[];
+  includeGlobalScope?: boolean;
 };
 
 type ScopeColumns = {
@@ -221,11 +222,23 @@ export async function querySignals(
     conditions.push(eq(signal.category, filters.category));
   }
 
-  // Only region-scoped signals match regionId filters; point/geometry/global scopes lack a regionId and are excluded by design.
-  if (filters.regionIds && filters.regionIds.length > 0) {
+  const hasRegionFilter = filters.regionIds && filters.regionIds.length > 0;
+
+  if (hasRegionFilter && filters.includeGlobalScope) {
+    // Region-scoped signals matching the region set, OR global-scoped signals.
     conditions.push(
-      and(eq(signal.scopeKind, "region"), inArray(signal.regionId, filters.regionIds))!,
+      or(
+        and(eq(signal.scopeKind, "region"), inArray(signal.regionId, filters.regionIds!))!,
+        eq(signal.scopeKind, "global"),
+      )!,
     );
+  } else if (hasRegionFilter) {
+    // Only region-scoped signals match regionId filters; point/geometry/global scopes lack a regionId and are excluded by design.
+    conditions.push(
+      and(eq(signal.scopeKind, "region"), inArray(signal.regionId, filters.regionIds!))!,
+    );
+  } else if (filters.includeGlobalScope) {
+    conditions.push(eq(signal.scopeKind, "global"));
   }
 
   const rows = await db

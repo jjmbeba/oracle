@@ -1,11 +1,15 @@
 import {
   getRegionById,
   getRegionDossier,
+  getRegionMemberCountryIds,
   isRegionId,
+  matchSignalsToRegion,
   searchRegions,
   toRegionSearchResult,
+  type SignalCategory,
 } from "@oracle/domain";
 import { Hono } from "hono";
+import { SIGNAL_WINDOW_MS, type SignalFeedStore } from "./signals";
 
 const regionNotFound = () =>
   Response.json(
@@ -59,3 +63,64 @@ regionsRoutes.get("/:id/dossier", (context) => {
 
   return context.json({ dossier });
 });
+
+type ActiveSignalsRoutesOptions = {
+  store: SignalFeedStore;
+};
+
+export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOptions) {
+  const router = new Hono();
+  const { store } = options;
+
+  router.get("/:id/active-signals", async (context) => {
+    const id = context.req.param("id");
+
+    if (!isRegionId(id)) {
+      return regionNotFound();
+    }
+
+    const region = getRegionById(id);
+
+    if (!region) {
+      return regionNotFound();
+    }
+
+    const memberCountryIds = getRegionMemberCountryIds(id);
+    const since = new Date(Date.now() - SIGNAL_WINDOW_MS);
+
+    const allSignals = await store.queryAllInWindow(since);
+    const signals = matchSignalsToRegion(allSignals, memberCountryIds);
+
+    const pairsByKey = new Map<string, { provider: string; category: SignalCategory }>();
+    for (const s of signals) {
+      pairsByKey.set(`${s.provider}:${s.category}`, { provider: s.provider, category: s.category });
+    }
+    const providerCategoryPairs = [...pairsByKey.values()];
+
+    const freshnessEntries = await Promise.all(
+      providerCategoryPairs.map(({ provider, category }) =>
+        store.queryFreshness(provider, category),
+      ),
+    );
+
+    const freshness = freshnessEntries.flatMap((entry) =>
+      entry
+        ? [
+            {
+              provider: entry.provider,
+              category: entry.category,
+              lastSuccessfulPollAt: entry.lastSuccessfulPollAt.toISOString(),
+            },
+          ]
+        : [],
+    );
+
+    return context.json({
+      region: toRegionSearchResult(region),
+      signals,
+      freshness,
+    });
+  });
+
+  return router;
+}

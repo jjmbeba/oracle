@@ -7,6 +7,7 @@ import {
   buildOverviewFactRows,
   type FactRow,
 } from "../region-ui";
+import RegionActiveSignals from "./region-active-signals.vue";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -85,11 +86,16 @@ const factSourceLabels = computed<readonly string[]>(
       <p v-if="factSourceLabels.length > 0" class="fact-attribution">
         Sources: {{ factSourceLabels.join(", ") }}
       </p>
+
+      <region-active-signals :selected-region="selectedRegion" />
     </div>
   </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use "../../../styles/variables" as *;
+@use "../../../styles/scrollbar" as *;
+
 .dossier-panel {
   position: absolute;
   z-index: 5;
@@ -104,11 +110,12 @@ const factSourceLabels = computed<readonly string[]>(
   color: #c0c0c0;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(12px);
+  padding: 14px;
 }
 
 .dossier-header {
   flex-shrink: 0;
-  padding: 14px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #2a2a2a;
 }
 
@@ -199,8 +206,10 @@ h2 {
 
 .dossier-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 14px;
+  padding-right: 20px;
+  @include thin-hover-scrollbar;
 }
 
 .state-copy {

@@ -5,6 +5,13 @@ export type CountryGroupId = `group:${string}`;
 export type ContinentId = `continent:${string}`;
 export type RegionId = CountryId | CountryGroupId | ContinentId;
 
+export type CountryBounds = {
+  readonly west: number;
+  readonly south: number;
+  readonly east: number;
+  readonly north: number;
+};
+
 export type Country = {
   readonly id: CountryId;
   readonly kind: "country";
@@ -12,6 +19,7 @@ export type Country = {
   readonly displayName: string;
   readonly latitude: number | null;
   readonly longitude: number | null;
+  readonly bounds: CountryBounds | null;
 };
 
 export type CountryGroup = {

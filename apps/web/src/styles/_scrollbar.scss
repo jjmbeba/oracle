@@ -1,0 +1,33 @@
+@use "./variables" as *;
+
+@mixin thin-hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.15s;
+
+  &:hover {
+    scrollbar-color: $border-hover transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: $border-hover;
+
+    &:hover {
+      background: #777;
+    }
+  }
+}

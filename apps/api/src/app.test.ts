@@ -18,10 +18,15 @@ function makeSignal(overrides: Partial<NormalizedSignal>): NormalizedSignal {
   };
 }
 
-function signalFeedApp(signals: NormalizedSignal[], freshness?: ProviderFreshness | null) {
+function signalFeedApp(
+  signals: NormalizedSignal[],
+  freshness?: ProviderFreshness | null,
+  activeSignals?: NormalizedSignal[],
+) {
   const store: SignalFeedStore = {
     queryFeed: async () => signals,
     queryFreshness: async () => freshness ?? null,
+    queryAllInWindow: async () => activeSignals ?? signals,
   };
   return createApp({ signals: store });
 }
@@ -572,5 +577,190 @@ describe("signal map", () => {
 
     expect(body.type).toBe("FeatureCollection");
     expect(body.features).toEqual([]);
+  });
+});
+
+describe("region active signals", () => {
+  it("returns region-scoped and global active signals for a country", async () => {
+    const regionSignal = makeSignal({
+      dedupeKey: "sig:region:ke",
+      title: "Kenya regional signal",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const globalSignal = makeSignal({
+      provider: "noaa-swpc",
+      dedupeKey: "sig:global:swpc",
+      title: "Geomagnetic storm",
+      category: "space-weather",
+      scope: { kind: "global" },
+    });
+    const testApp = signalFeedApp([], null, [regionSignal, globalSignal]);
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.region).toEqual({
+      id: "country:ke",
+      kind: "country",
+      displayName: "Kenya",
+      alpha2: "KE",
+    });
+    expect(body.signals).toHaveLength(2);
+    const titles = body.signals.map((s: { title: string }) => s.title);
+    expect(titles).toContain("Kenya regional signal");
+    expect(titles).toContain("Geomagnetic storm");
+  });
+
+  it("matches point signals to a country via bounding box", async () => {
+    // Tokyo sits inside Japan's bounds (129.41, 31.03, 145.54, 45.55)
+    const tokyoSignal = makeSignal({
+      provider: "openweather",
+      dedupeKey: "sig:openweather:tokyo",
+      title: "Tokyo thunderstorm",
+      category: "weather",
+      scope: { kind: "point", coordinates: [139.65, 35.68] },
+    });
+    // Nairobi sits outside Japan's bounds; should be excluded
+    const nairobiSignal = makeSignal({
+      provider: "openweather",
+      dedupeKey: "sig:openweather:nairobi",
+      title: "Nairobi thunderstorm",
+      category: "weather",
+      scope: { kind: "point", coordinates: [36.82, -1.29] },
+    });
+    const testApp = signalFeedApp([], null, [tokyoSignal, nairobiSignal]);
+
+    const response = await testApp.request("/regions/country:jp/active-signals");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    const titles = body.signals.map((s: { title: string }) => s.title);
+    expect(titles).toContain("Tokyo thunderstorm");
+    expect(titles).not.toContain("Nairobi thunderstorm");
+  });
+
+  it("matches point signals to any member country of a group", async () => {
+    // Nairobi is in Kenya, which is a member of Eastern Africa
+    const nairobiSignal = makeSignal({
+      provider: "openweather",
+      dedupeKey: "sig:ea:nairobi",
+      title: "Nairobi storm",
+      category: "weather",
+      scope: { kind: "point", coordinates: [36.82, -1.29] },
+    });
+    // Berlin is in Germany, NOT in Eastern Africa
+    const berlinSignal = makeSignal({
+      provider: "openweather",
+      dedupeKey: "sig:ea:berlin",
+      title: "Berlin storm",
+      category: "weather",
+      scope: { kind: "point", coordinates: [13.4, 52.52] },
+    });
+    const testApp = signalFeedApp([], null, [nairobiSignal, berlinSignal]);
+
+    const response = await testApp.request("/regions/group:eastern-africa/active-signals");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    const titles = body.signals.map((s: { title: string }) => s.title);
+    expect(titles).toContain("Nairobi storm");
+    expect(titles).not.toContain("Berlin storm");
+  });
+
+  it("returns empty arrays when no active signals exist", async () => {
+    const testApp = signalFeedApp([], null, []);
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.signals).toEqual([]);
+    expect(body.freshness).toEqual([]);
+  });
+
+  it("returns 404 for unknown region", async () => {
+    const testApp = signalFeedApp([], null, []);
+
+    const response = await testApp.request("/regions/banana/active-signals");
+
+    expect(response.status).toBe(404);
+
+    const body = await response.json();
+
+    expect(body.error.code).toBe("region_not_found");
+  });
+
+  it("fetches signals and freshness in parallel", async () => {
+    const order: string[] = [];
+    const regionSignal = makeSignal({
+      provider: "usgs",
+      dedupeKey: "sig:parallel",
+      title: "Parallel test",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const store: SignalFeedStore = {
+      queryFeed: async () => {
+        order.push("feed");
+        return [];
+      },
+      queryFreshness: async () => {
+        order.push("freshness");
+        return {
+          provider: "usgs",
+          category: "earthquake",
+          lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+        };
+      },
+      queryAllInWindow: async () => {
+        order.push("active");
+        return [regionSignal];
+      },
+    };
+    const testApp = createApp({ signals: store });
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+    expect(order[0]).toBe("active");
+    expect(order).toContain("freshness");
+  });
+
+  it("returns freshness per provider in the response", async () => {
+    const signal = makeSignal({
+      provider: "usgs",
+      dedupeKey: "sig:provider-freshness",
+      title: "Provider test",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const testApp = signalFeedApp(
+      [],
+      {
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+      },
+      [signal],
+    );
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.freshness).toHaveLength(1);
+    expect(body.freshness[0]).toEqual({
+      provider: "usgs",
+      category: "earthquake",
+      lastSuccessfulPollAt: "2026-06-18T12:00:00.000Z",
+    });
   });
 });
