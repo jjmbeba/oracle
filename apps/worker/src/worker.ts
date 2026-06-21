@@ -12,6 +12,7 @@ import { createUsgsIngestionJob } from "./jobs/usgs-ingestion";
 import { createSwpcIngestionJob } from "./jobs/swpc-ingestion";
 import { createOpenweatherIngestionJob } from "./jobs/openweather-ingestion";
 import { createWatchedRegionSnapshotJob } from "./jobs/watched-region-snapshots";
+import { createChangeReportJob } from "./jobs/change-reports";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -83,6 +84,13 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
   });
 
   scheduler.registerIntervalJob(snapshotJob);
+
+  const changeReportJob = createChangeReportJob({
+    db: dbConnection.db,
+    logger,
+  });
+
+  scheduler.registerIntervalJob(changeReportJob);
 
   logger.info("worker.started", {
     metadata: {

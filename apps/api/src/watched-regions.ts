@@ -1,4 +1,5 @@
-import { watchedRegion } from "@oracle/db";
+import { getLatestChangeReport, watchedRegion } from "@oracle/db";
+import type { ChangeReportRow } from "@oracle/db";
 import { getRegionById, isRegionId, toRegionSearchResult, type RegionId } from "@oracle/domain";
 import { and, count, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -23,6 +24,7 @@ export type WatchedRegionStore = {
   countByUser(userId: string): Promise<number>;
   insert(row: { id: string; userId: string; regionId: string }): Promise<void>;
   deleteByUserAndRegion(userId: string, regionId: string): Promise<void>;
+  getLatestChangeReport(watchedRegionId: string): Promise<ChangeReportRow | undefined>;
 };
 
 export function createDrizzleWatchedRegionStore<T extends Record<string, unknown>>(
@@ -64,6 +66,8 @@ export function createDrizzleWatchedRegionStore<T extends Record<string, unknown
         .delete(watchedRegion)
         .where(and(eq(watchedRegion.userId, userId), eq(watchedRegion.regionId, regionId)));
     },
+
+    getLatestChangeReport: (watchedRegionId) => getLatestChangeReport(db, watchedRegionId),
   };
 }
 
@@ -155,6 +159,23 @@ export function createWatchedRegionsRoutes(options: WatchedRegionsOptions) {
     return c.json({ success: true });
   });
 
+  router.get("/:regionId/change-report", async (c) => {
+    const user = getAuthenticatedUser(c);
+    const regionId = c.req.param("regionId");
+    const existing = await store.findByUserAndRegion(user.id, regionId);
+
+    if (!existing) {
+      return c.json(
+        { error: { code: "watched_region_not_found", message: "Watched region not found" } },
+        404,
+      );
+    }
+
+    const row = await store.getLatestChangeReport(existing.id);
+
+    return c.json({ changeReport: row ? toChangeReportResponse(row) : null });
+  });
+
   return router;
 }
 
@@ -170,5 +191,15 @@ function enrichWatchedRegion(id: string, regionId: string, createdAt: Date) {
     regionId,
     region: region ? toRegionSearchResult(region) : null,
     createdAt: createdAt.toISOString(),
+  };
+}
+
+function toChangeReportResponse(row: ChangeReportRow) {
+  return {
+    generatedAt: row.generatedAt.toISOString(),
+    newSignals: row.newSignals,
+    expiredSignals: row.expiredSignals,
+    severityChanges: row.severityChanges,
+    riskMovement: row.riskMovement,
   };
 }
