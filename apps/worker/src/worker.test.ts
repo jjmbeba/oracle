@@ -54,7 +54,7 @@ describe("worker runtime", () => {
       signals: new SignalEmitter(),
     });
 
-    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(3);
+    expect(scheduler.registerIntervalJob).toHaveBeenCalledTimes(5);
     expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -74,6 +74,20 @@ describe("worker runtime", () => {
       expect.objectContaining({
         name: "openweather-ingestion",
         intervalMs: 600000,
+      }),
+    );
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
+        name: "watched-region-snapshots",
+        intervalMs: 300000,
+      }),
+    );
+    expect(scheduler.registerIntervalJob).toHaveBeenNthCalledWith(
+      5,
+      expect.objectContaining({
+        name: "change-reports",
+        intervalMs: 300000,
       }),
     );
     expect(records).toEqual([

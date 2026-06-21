@@ -1,6 +1,30 @@
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
-import type { SignalCategory, SignalSeverity } from "@oracle/domain";
+import type {
+  ChangeReportEntry,
+  RiskMovement,
+  SeverityChangeEntry,
+  SignalCategory,
+  SignalSeverity,
+} from "@oracle/domain";
 import { user } from "./auth-schema";
+
+export const changeReport = pgTable(
+  "change_report",
+  {
+    id: text("id").primaryKey(),
+    watchedRegionId: text("watched_region_id")
+      .notNull()
+      .references(() => watchedRegion.id, { onDelete: "cascade" }),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).notNull(),
+    newSignals: jsonb("new_signals").$type<ChangeReportEntry[]>().notNull(),
+    expiredSignals: jsonb("expired_signals").$type<ChangeReportEntry[]>().notNull(),
+    severityChanges: jsonb("severity_changes").$type<SeverityChangeEntry[]>().notNull(),
+    riskMovement: jsonb("risk_movement").$type<RiskMovement | null>().notNull(),
+  },
+  (table) => [
+    index("cr_watched_region_generated_idx").on(table.watchedRegionId, table.generatedAt),
+  ],
+);
 
 export const watchedRegion = pgTable(
   "watched_region",

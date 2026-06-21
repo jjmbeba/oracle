@@ -53,6 +53,8 @@ function createInMemoryStore(): WatchedRegionStore {
         data.splice(idx, 1);
       }
     },
+
+    getLatestChangeReport: async () => undefined,
   };
 }
 
@@ -283,6 +285,73 @@ describe("watched regions", () => {
       const response = await app.request("/");
 
       expect(response.status).toBe(401);
+    });
+  });
+
+  describe("GET /:regionId/change-report", () => {
+    it("returns null when no change report exists yet", async () => {
+      const { store, app } = createTestApp();
+
+      await store.insert({
+        id: "wr-1",
+        userId: "guest-user-id",
+        regionId: "country:ke",
+      });
+
+      const response = await app.request("/country:ke/change-report");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.changeReport).toBeNull();
+    });
+
+    it("returns 404 when the region is not watched", async () => {
+      const { app } = createTestApp();
+
+      const response = await app.request("/country:br/change-report");
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.error.code).toBe("watched_region_not_found");
+    });
+
+    it("returns a change report when one exists", async () => {
+      const store: WatchedRegionStore = {
+        ...createInMemoryStore(),
+        getLatestChangeReport: async () => ({
+          id: "wr-1:2026-01-01T00:00:00.000Z",
+          watchedRegionId: "wr-1",
+          generatedAt: new Date("2026-01-01T00:00:00Z"),
+          newSignals: [
+            { dedupeKey: "sig:a", severity: "moderate", category: "earthquake", occurredAt: null },
+          ],
+          expiredSignals: [],
+          severityChanges: [],
+          riskMovement: null,
+        }),
+      };
+      const auth = requireAuth;
+      const app = new Hono<AppBindings>();
+      app.use("*", auth);
+      app.route("/", createWatchedRegionsRoutes({ store, requireAuth: auth }));
+
+      await store.insert({
+        id: "wr-1",
+        userId: "guest-user-id",
+        regionId: "country:ke",
+      });
+
+      const response = await app.request("/country:ke/change-report");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.changeReport).not.toBeNull();
+      expect(body.changeReport.generatedAt).toBe("2026-01-01T00:00:00.000Z");
+      expect(body.changeReport.newSignals).toHaveLength(1);
+      expect(body.changeReport.newSignals[0].dedupeKey).toBe("sig:a");
+      expect(body.changeReport.expiredSignals).toEqual([]);
+      expect(body.changeReport.severityChanges).toEqual([]);
+      expect(body.changeReport.riskMovement).toBeNull();
     });
   });
 });
