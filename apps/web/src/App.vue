@@ -4,7 +4,6 @@ import { useApiHealthStatus } from "./features/health/composables/use-api-health
 import MapView from "./features/map/components/map-view.vue";
 import RegionSearchPanel from "./features/regions/components/region-search-panel.vue";
 import RegionDossierPanel from "./features/regions/components/region-dossier-panel.vue";
-import SignalCategoryToggles from "./features/signals/components/signal-category-toggles.vue";
 import SignalFeed from "./features/signals/components/signal-feed.vue";
 import AppNavbar from "./layout/components/app-navbar.vue";
 import { useAnonymousSession } from "./composables/use-anonymous-session";
@@ -86,8 +85,10 @@ function handleUnwatchRegion(regionId: string): void {
       <region-search-panel
         :selected-region="selectedRegion"
         :watched-regions="watchedRegions ?? []"
+        :active-categories="activeCategories"
         @select-region="selectRegionWithReset"
         @unwatch-region="handleUnwatchRegion"
+        @update:active-categories="(cats) => (activeCategories = cats)"
       />
 
       <region-dossier-panel
@@ -99,10 +100,6 @@ function handleUnwatchRegion(regionId: string): void {
         @watch="handleWatch"
         @unwatch="handleUnwatch"
       />
-
-      <div class="toggles-area">
-        <signal-category-toggles v-model:active-categories="activeCategories" />
-      </div>
     </div>
 
     <signal-feed :active-categories="activeCategories" @signal-click="handleSignalClick" />
@@ -115,19 +112,11 @@ function handleUnwatchRegion(regionId: string): void {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: #141414;
+  background-color: #0e0e0e;
 }
 
 .map-area {
   position: relative;
   flex: 1;
-}
-
-.toggles-area {
-  position: absolute;
-  z-index: 5;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
 }
 </style>

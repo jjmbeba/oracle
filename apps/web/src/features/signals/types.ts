@@ -41,8 +41,8 @@ export const SEVERITY_STYLES = {
   severe: {
     radius: 13,
     opacity: 0.85,
-    color: "#d48040",
-    haloScale: 1.8,
+    color: "#c0683a",
+    haloScale: 1.45,
     strokeColor: SIGNAL_STROKE_LIGHT,
     strokeOpacity: 0.25,
     strokeWidth: 1,
@@ -52,8 +52,8 @@ export const SEVERITY_STYLES = {
   extreme: {
     radius: 18,
     opacity: 1.0,
-    color: "#c05050",
-    haloScale: 2.2,
+    color: "#b04848",
+    haloScale: 1.7,
     strokeColor: SIGNAL_STROKE_LIGHT,
     strokeOpacity: 0.25,
     strokeWidth: 1,
@@ -108,6 +108,10 @@ export type SignalGeoJsonCollection = {
   type: "FeatureCollection";
   features: SignalGeoJsonFeature[];
 };
+
+export function severityColor(severity: SignalSeverity): string {
+  return SEVERITY_STYLES[severity].color;
+}
 
 export function signalFeedToGeoJson(signals: readonly SignalFeedItem[]): SignalGeoJsonCollection {
   const features: SignalGeoJsonFeature[] = [];

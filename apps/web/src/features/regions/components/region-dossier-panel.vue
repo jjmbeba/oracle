@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { useRegionDossierQuery } from "../queries";
+import { computed } from "vue";
+import { scoreSignals, type NormalizedSignal } from "@oracle/domain";
+import { useRegionDossierQuery, useRegionActiveSignalsQuery } from "../queries";
 import type { RegionSearchResult } from "../api";
+import type { SignalFeedItem } from "../../signals/api";
 import {
   getRegionKindLabel,
   getRegionMetaLabel,
   buildOverviewFactRows,
+  buildDossierStatusStrip,
   type FactRow,
 } from "../region-ui";
 import RegionActiveSignals from "./region-active-signals.vue";
 import RegionChangeReport from "./region-change-report.vue";
 import RegionRiskSummary from "./region-risk-summary.vue";
-import { computed } from "vue";
+
+// ponytail: API projection omits dedupeKey; the shape is structurally compatible.
+const asScorable = (signals: readonly SignalFeedItem[]): readonly NormalizedSignal[] =>
+  signals as readonly NormalizedSignal[];
 
 const props = defineProps<{
   selectedRegion: RegionSearchResult;
@@ -26,6 +33,7 @@ const emit = defineEmits<{
 
 const regionId = computed(() => props.selectedRegion.id);
 const { data: dossierData, isLoading } = useRegionDossierQuery(regionId);
+const { data: activeData } = useRegionActiveSignalsQuery(regionId);
 
 const factRows = computed<readonly FactRow[]>(() => {
   const d = dossierData.value;
@@ -36,11 +44,43 @@ const factRows = computed<readonly FactRow[]>(() => {
 const factSourceLabels = computed<readonly string[]>(
   () => dossierData.value?.factSources.map((s) => s.label) ?? [],
 );
+
+const statusSegments = computed<readonly string[]>(() => {
+  const signals = activeData.value?.signals ?? [];
+  const freshnessTimestamps = (activeData.value?.freshness ?? [])
+    .map((f) => new Date(f.lastSuccessfulPollAt).getTime())
+    .filter((t) => !Number.isNaN(t));
+  const lastUpdatedAt =
+    freshnessTimestamps.length > 0
+      ? new Date(Math.max(...freshnessTimestamps)).toISOString()
+      : null;
+  const { score, level } = scoreSignals(asScorable(signals));
+
+  return buildDossierStatusStrip({
+    regionLabel: props.selectedRegion.displayName,
+    isWatched: props.isWatched,
+    activeCount: signals.length,
+    lastUpdatedAt,
+    riskScore: score,
+    riskLevel: level,
+  });
+});
 </script>
 
 <template>
   <section class="dossier-panel" aria-live="polite">
-    <div class="dossier-header">
+    <div class="dossier-status-strip" aria-label="Region status summary">
+      <span
+        v-for="(segment, idx) in statusSegments"
+        :key="`${idx}-${segment}`"
+        class="status-segment"
+        :class="{ accent: idx === 0 }"
+      >
+        {{ segment }}
+      </span>
+    </div>
+
+    <header class="dossier-header">
       <div class="dossier-title-area">
         <p class="panel-label">Selected region</p>
         <div class="title-row">
@@ -68,7 +108,7 @@ const factSourceLabels = computed<readonly string[]>(
       >
         {{ watchDisabledReason ?? "Watch region" }}
       </button>
-    </div>
+    </header>
 
     <div class="dossier-body">
       <p v-if="isLoading" class="state-copy">Loading facts...</p>
@@ -108,21 +148,70 @@ const factSourceLabels = computed<readonly string[]>(
   right: 16px;
   top: 16px;
   bottom: 16px;
-  width: 320px;
+  width: 360px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #2a2a2a;
-  background: rgba(20, 20, 20, 0.92);
-  color: #c0c0c0;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+  border: 1px solid $border-default;
+  background: $bg-panel;
+  color: $text-primary;
+  box-shadow: $shadow-panel;
   backdrop-filter: blur(12px);
-  padding: 14px;
+  padding: 0;
+  animation: dossier-in 200ms ease-out;
+}
+
+@keyframes dossier-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dossier-panel {
+    animation: none;
+  }
+}
+
+.dossier-status-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid $border-default;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $text-meta;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-segment {
+  display: inline-flex;
+  align-items: center;
+
+  & + &::before {
+    content: "·";
+    margin-right: 6px;
+    color: $text-muted;
+  }
+
+  &.accent {
+    color: $ink;
+    font-weight: 500;
+  }
 }
 
 .dossier-header {
   flex-shrink: 0;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #2a2a2a;
+  padding: 14px;
+  border-bottom: 1px solid $border-default;
 }
 
 .dossier-title-area {
@@ -134,7 +223,7 @@ const factSourceLabels = computed<readonly string[]>(
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #666;
+  color: $text-secondary;
 }
 
 .title-row {
@@ -146,37 +235,38 @@ const factSourceLabels = computed<readonly string[]>(
 
 h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 500;
-  color: #d0d0d0;
-  line-height: 1.4;
+  color: $text-heading;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
 .close-btn {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #2a2a2a;
-  background: #202020;
-  color: #888;
+  border: 1px solid transparent;
+  background: transparent;
+  color: $text-meta;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
-}
 
-.close-btn:hover {
-  border-color: #555;
-  color: #c0c0c0;
+  &:hover {
+    color: $text-heading;
+    border-color: $border-default;
+  }
 }
 
 .region-meta {
   display: flex;
   gap: 10px;
-  margin-top: 8px;
-  color: #777;
+  margin-top: 6px;
+  color: $text-meta;
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -184,10 +274,10 @@ h2 {
 
 .watch-btn {
   width: 100%;
-  padding: 8px 0;
-  border: 1px solid #2a2a2a;
-  background: #202020;
-  color: #c0c0c0;
+  padding: 7px 0;
+  border: 1px solid $border-default;
+  background: $bg-button;
+  color: $text-primary;
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -196,32 +286,32 @@ h2 {
 }
 
 .watch-btn:hover:not(:disabled) {
-  border-color: #555;
+  border-color: $border-hover;
 }
 
 .watch-btn:disabled {
   opacity: 0.4;
   cursor: default;
-  color: #888;
+  color: $text-muted;
 }
 
 .watch-btn.watching {
-  border-color: #4a7c59;
-  color: #4a7c59;
+  border-color: $ink;
+  color: $ink;
 }
 
 .dossier-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 20px;
+  padding: 4px 14px 14px;
   @include thin-hover-scrollbar;
 }
 
 .state-copy {
   margin: 0;
   font-size: 12px;
-  color: #888;
+  color: $text-muted;
 }
 
 .fact-list {
@@ -232,8 +322,8 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 0;
-  border-bottom: 1px solid #222;
+  padding: 7px 0;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 .fact-row:last-child {
@@ -244,7 +334,7 @@ h2 {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #666;
+  color: $text-secondary;
 }
 
 .fact-value {
@@ -256,19 +346,19 @@ h2 {
 
 .fact-text {
   font-size: 12px;
-  color: #c0c0c0;
+  color: $text-primary;
   line-height: 1.4;
 }
 
 .fact-source {
   font-size: 10px;
-  color: #888;
+  color: $text-meta;
 }
 
 .fact-attribution {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   font-size: 10px;
-  color: #666;
+  color: $text-secondary;
   line-height: 1.5;
 }
 

@@ -28,7 +28,12 @@ const riskCell = computed<string>(() => {
 
 const isZeroDelta = computed(() => {
   if (!report.value) return true;
-  return newCount.value === 0 && expiredCount.value === 0 && severityCount.value === 0 && !report.value.riskMovement;
+  return (
+    newCount.value === 0 &&
+    expiredCount.value === 0 &&
+    severityCount.value === 0 &&
+    !report.value.riskMovement
+  );
 });
 </script>
 
@@ -36,7 +41,9 @@ const isZeroDelta = computed(() => {
   <section class="change-report" aria-label="Latest change report for watched region">
     <header class="report-header">
       <span class="report-label">Change report</span>
-      <span v-if="report" class="report-timestamp">{{ formatShortRelativeTime(report.generatedAt) }}</span>
+      <span v-if="report" class="report-timestamp">{{
+        formatShortRelativeTime(report.generatedAt)
+      }}</span>
     </header>
 
     <p v-if="isLoading" class="state-copy">Loading change report&hellip;</p>
@@ -74,24 +81,6 @@ const isZeroDelta = computed(() => {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid $border-default;
-  animation: fade-in 200ms ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .change-report {
-    animation: none;
-  }
 }
 
 .report-header {

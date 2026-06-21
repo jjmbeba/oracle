@@ -1,19 +1,23 @@
+$bg-canvas: #0e0e0e;
 $bg-surface: #141414;
-$bg-panel: rgba(20, 20, 20, 0.92);
+$bg-panel: rgba(22, 22, 22, 0.92);
 $bg-input: #1a1a1a;
 $bg-button: #202020;
 
-$border-default: #2a2a2a;
+$border-default: #232323;
 $border-hover: #555;
 
-$text-primary: #c0c0c0;
-$text-heading: #d0d0d0;
-$text-secondary: #666;
-$text-meta: #777;
-$text-muted: #888;
+$text-primary: #c8c8c8;
+$text-heading: #d8d8d8;
+$text-secondary: #6e6e6e;
+$text-meta: #8a8a8a;
+$text-muted: #909090;
 $text-alert: #b87878;
 
 $accent-green: #4a7c59;
 $accent-red: #8b4a4a;
+
+$ink: #c9a661;
+$ink-dim: #8a7849;
 
 $shadow-panel: 0 16px 40px rgba(0, 0, 0, 0.32);

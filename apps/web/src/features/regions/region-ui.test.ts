@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { RegionSearchResult } from "./api";
-import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected, riskLevelLabel, riskLevelColor } from "./region-ui";
+import {
+  getRegionKindLabel,
+  getRegionMetaLabel,
+  isRegionSelected,
+  riskLevelLabel,
+  riskLevelColor,
+  buildDossierStatusStrip,
+} from "./region-ui";
 
 const kenya: RegionSearchResult = {
   id: "country:ke",
@@ -64,5 +71,88 @@ describe("region UI helpers", () => {
       riskLevelColor("critical"),
     ];
     expect(new Set(colors).size).toBe(5);
+  });
+});
+
+describe("buildDossierStatusStrip", () => {
+  it("always leads with the region label and ends with the risk line", () => {
+    const strip = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 0,
+      lastUpdatedAt: null,
+      riskScore: 12,
+      riskLevel: "quiet",
+    });
+    expect(strip[0]).toBe("Kenya");
+    expect(strip[strip.length - 1]).toBe("Risk 12/100 Quiet");
+  });
+
+  it("omits the active count when no signals are present", () => {
+    const strip = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 0,
+      lastUpdatedAt: null,
+      riskScore: 0,
+      riskLevel: "quiet",
+    });
+    expect(strip.some((s) => s.includes("active"))).toBe(false);
+  });
+
+  it("includes the active count when signals are present", () => {
+    const strip = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 7,
+      lastUpdatedAt: null,
+      riskScore: 42,
+      riskLevel: "watch",
+    });
+    expect(strip).toContain("7 active");
+  });
+
+  it("includes the watched marker only when watched", () => {
+    const unwatched = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 0,
+      lastUpdatedAt: null,
+      riskScore: 0,
+      riskLevel: "quiet",
+    });
+    expect(unwatched).not.toContain("Watched");
+
+    const watched = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: true,
+      activeCount: 0,
+      lastUpdatedAt: null,
+      riskScore: 0,
+      riskLevel: "quiet",
+    });
+    expect(watched).toContain("Watched");
+  });
+
+  it("includes the freshness line only when a timestamp is given", () => {
+    const without = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 0,
+      lastUpdatedAt: null,
+      riskScore: 0,
+      riskLevel: "quiet",
+    });
+    expect(without.some((s) => s.startsWith("Updated"))).toBe(false);
+
+    const withTs = buildDossierStatusStrip({
+      regionLabel: "Kenya",
+      isWatched: false,
+      activeCount: 0,
+      lastUpdatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      riskScore: 0,
+      riskLevel: "quiet",
+    });
+    expect(withTs.some((s) => s.startsWith("Updated"))).toBe(true);
   });
 });

@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { scoreSignals, type RiskLevel } from "@oracle/domain";
+import { scoreSignals, type NormalizedSignal, type RiskLevel } from "@oracle/domain";
 import { useRegionActiveSignalsQuery } from "../queries";
 import { riskLevelColor, riskLevelLabel } from "../region-ui";
 import type { RegionSearchResult } from "../api";
+import type { SignalFeedItem } from "../../signals/api";
+
+// ponytail: API projection omits dedupeKey; the shape is structurally compatible.
+const asScorable = (signals: readonly SignalFeedItem[]): readonly NormalizedSignal[] =>
+  signals as readonly NormalizedSignal[];
 
 const props = defineProps<{
   selectedRegion: RegionSearchResult;
@@ -12,7 +17,7 @@ const props = defineProps<{
 const regionId = computed(() => props.selectedRegion.id);
 const { data, isLoading, isError } = useRegionActiveSignalsQuery(regionId);
 
-const risk = computed(() => scoreSignals(data.value?.signals ?? []));
+const risk = computed(() => scoreSignals(asScorable(data.value?.signals ?? [])));
 const score = computed(() => risk.value.score);
 const level = computed<RiskLevel>(() => risk.value.level);
 </script>
@@ -40,24 +45,6 @@ const level = computed<RiskLevel>(() => risk.value.level);
 .risk-summary {
   margin-top: 18px;
   padding-top: 14px;
-  animation: fade-in 200ms ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .risk-summary {
-    animation: none;
-  }
 }
 
 .risk-header {
@@ -83,7 +70,7 @@ const level = computed<RiskLevel>(() => risk.value.level);
 }
 
 .risk-score {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   color: $text-heading;
   line-height: 1;
@@ -104,7 +91,7 @@ const level = computed<RiskLevel>(() => risk.value.level);
 }
 
 .risk-bar {
-  height: 6px;
+  height: 4px;
   background: $border-default;
 }
 

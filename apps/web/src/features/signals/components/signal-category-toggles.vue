@@ -39,14 +39,14 @@ function toggle(category: SignalCategory) {
 
 .toggles {
   display: flex;
-  gap: 4px;
+  gap: 0;
 }
 
 .toggle {
-  padding: 5px 12px;
+  padding: 4px 10px;
   border: 1px solid $border-default;
-  background: $bg-button;
-  color: $text-muted;
+  background: transparent;
+  color: $text-meta;
   cursor: pointer;
   font: inherit;
   font-size: 10px;
@@ -57,15 +57,19 @@ function toggle(category: SignalCategory) {
     color 0.15s,
     background 0.15s;
 
+  & + & {
+    border-left-width: 0;
+  }
+
   &:hover {
-    border-color: $border-hover;
     color: $text-heading;
+    border-color: $border-hover;
   }
 
   &.active {
-    border-color: $accent-green;
-    color: $accent-green;
-    background: rgba($accent-green, 0.08);
+    border-color: $ink;
+    color: $ink;
+    background: rgba($ink, 0.06);
   }
 }
 </style>
