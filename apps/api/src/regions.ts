@@ -4,6 +4,7 @@ import {
   getRegionMemberCountryIds,
   isRegionId,
   matchSignalsToRegion,
+  scoreSignals,
   searchRegions,
   toRegionSearchResult,
   type SignalCategory,
@@ -120,6 +121,33 @@ export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOpti
       signals,
       freshness,
     });
+  });
+
+  return router;
+}
+
+export function createRegionRiskRoutes(options: { store: SignalFeedStore }) {
+  const router = new Hono();
+  const { store } = options;
+
+  router.get("/:id/risk", async (c) => {
+    const id = c.req.param("id");
+
+    if (!isRegionId(id)) {
+      return regionNotFound();
+    }
+
+    const region = getRegionById(id);
+
+    if (!region) {
+      return regionNotFound();
+    }
+
+    const memberCountryIds = getRegionMemberCountryIds(id);
+    const since = new Date(Date.now() - SIGNAL_WINDOW_MS);
+    const matched = matchSignalsToRegion(await store.queryAllInWindow(since), memberCountryIds);
+
+    return c.json({ region: toRegionSearchResult(region), risk: scoreSignals(matched) });
   });
 
   return router;

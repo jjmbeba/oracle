@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
 import type { Auth } from "./auth";
 import type { AppBindings } from "./auth-middleware";
-import { createRegionActiveSignalsRoutes, regionsRoutes } from "./regions";
+import { createRegionActiveSignalsRoutes, createRegionRiskRoutes, regionsRoutes } from "./regions";
 import { createSignalFeedRoutes, createSignalMapRoutes, type SignalFeedStore } from "./signals";
 import { createWatchedRegionsRoutes, type WatchedRegionStore } from "./watched-regions";
 
@@ -38,6 +38,7 @@ export function createApp(options: AppOptions = {}) {
     app.route("/signals", createSignalFeedRoutes({ store: options.signals }));
     app.route("/signals", createSignalMapRoutes({ store: options.signals }));
     app.route("/regions", createRegionActiveSignalsRoutes({ store: options.signals }));
+    app.route("/regions", createRegionRiskRoutes({ store: options.signals }));
   }
 
   if (options.watchedRegions) {
