@@ -73,4 +73,21 @@ describe("scoreSignals", () => {
       expect(expected.has(scoreSignals([sig(s)]).level)).toBe(true);
     }
   });
+
+  it("excludes space-weather signals from the score", () => {
+    const quake = sig("severe");
+    const solar: NormalizedSignal = { ...sig("extreme"), category: "space-weather" };
+    const r = scoreSignals([quake, solar]);
+    expect(r.score).toBeGreaterThanOrEqual(30);
+    expect(r.score).toBeLessThan(60);
+    expect(r.contributingSignals).toBe(1);
+  });
+
+  it("returns quiet when only space-weather signals are present", () => {
+    const r = scoreSignals([{ ...sig("extreme"), category: "space-weather" }]);
+    expect(r.score).toBe(0);
+    expect(r.level).toBe("quiet");
+    expect(r.worstSeverity).toBeNull();
+    expect(r.contributingSignals).toBe(0);
+  });
 });

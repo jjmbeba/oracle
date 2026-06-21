@@ -8,6 +8,7 @@ import {
   type FactRow,
 } from "../region-ui";
 import RegionActiveSignals from "./region-active-signals.vue";
+import RegionRiskSummary from "./region-risk-summary.vue";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -86,6 +87,8 @@ const factSourceLabels = computed<readonly string[]>(
       <p v-if="factSourceLabels.length > 0" class="fact-attribution">
         Sources: {{ factSourceLabels.join(", ") }}
       </p>
+
+      <region-risk-summary :selected-region="selectedRegion" />
 
       <region-active-signals :selected-region="selectedRegion" />
     </div>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RegionSearchResult } from "./api";
-import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected } from "./region-ui";
+import { getRegionKindLabel, getRegionMetaLabel, isRegionSelected, riskLevelLabel, riskLevelColor } from "./region-ui";
 
 const kenya: RegionSearchResult = {
   id: "country:ke",
@@ -45,5 +45,24 @@ describe("region UI helpers", () => {
     expect(isRegionSelected(kenya, kenya)).toBe(true);
     expect(isRegionSelected(kenya, africa)).toBe(false);
     expect(isRegionSelected(kenya, null)).toBe(false);
+  });
+
+  it("maps risk level values to display labels", () => {
+    expect(riskLevelLabel("quiet")).toBe("Quiet");
+    expect(riskLevelLabel("watch")).toBe("Watch");
+    expect(riskLevelLabel("elevated")).toBe("Elevated");
+    expect(riskLevelLabel("high")).toBe("High");
+    expect(riskLevelLabel("critical")).toBe("Critical");
+  });
+
+  it("maps risk level values to distinct display colors", () => {
+    const colors = [
+      riskLevelColor("quiet"),
+      riskLevelColor("watch"),
+      riskLevelColor("elevated"),
+      riskLevelColor("high"),
+      riskLevelColor("critical"),
+    ];
+    expect(new Set(colors).size).toBe(5);
   });
 });
