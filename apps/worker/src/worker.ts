@@ -11,6 +11,7 @@ import { createScheduler, type Scheduler } from "./scheduler";
 import { createUsgsIngestionJob } from "./jobs/usgs-ingestion";
 import { createSwpcIngestionJob } from "./jobs/swpc-ingestion";
 import { createOpenweatherIngestionJob } from "./jobs/openweather-ingestion";
+import { createWatchedRegionSnapshotJob } from "./jobs/watched-region-snapshots";
 
 export type WorkerRuntime = {
   shutdown(): Promise<void>;
@@ -75,6 +76,13 @@ export function startWorker(options: StartWorkerOptions = {}): WorkerRuntime {
   scheduler.registerIntervalJob(usgsJob);
   scheduler.registerIntervalJob(swpcJob);
   scheduler.registerIntervalJob(openweatherJob);
+
+  const snapshotJob = createWatchedRegionSnapshotJob({
+    db: dbConnection.db,
+    logger,
+  });
+
+  scheduler.registerIntervalJob(snapshotJob);
 
   logger.info("worker.started", {
     metadata: {

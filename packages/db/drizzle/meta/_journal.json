@@ -36,6 +36,13 @@
       "when": 1781716425745,
       "tag": "0004_tidy_morg",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781900000000,
+      "tag": "0005_watched_region_snapshot",
+      "breakpoints": true
     }
   ]
 }
