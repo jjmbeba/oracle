@@ -1,4 +1,5 @@
 import type { RegionSearchResult, CountryDossierFacts, GroupDossierFacts } from "./api";
+import type { RiskLevel } from "@oracle/domain";
 
 export function getRegionKindLabel(region: RegionSearchResult): string {
   if (region.kind === "country") {
@@ -105,4 +106,29 @@ export function buildOverviewFactRows(
   return kind === "country"
     ? buildRows(facts as CountryDossierFacts, COUNTRY_FACTS)
     : buildRows(facts as GroupDossierFacts, GROUP_FACTS);
+}
+
+const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
+  quiet: "Quiet",
+  watch: "Watch",
+  elevated: "Elevated",
+  high: "High",
+  critical: "Critical",
+};
+
+export function riskLevelLabel(level: RiskLevel): string {
+  return RISK_LEVEL_LABELS[level];
+}
+
+// ponytail: reuses the severity palette so the visual vocabulary is consistent across the dashboard.
+const RISK_LEVEL_COLORS: Record<RiskLevel, string> = {
+  quiet: "#7da4b8",
+  watch: "#8bbf7a",
+  elevated: "#e0c05a",
+  high: "#d48040",
+  critical: "#c05050",
+};
+
+export function riskLevelColor(level: RiskLevel): string {
+  return RISK_LEVEL_COLORS[level];
 }

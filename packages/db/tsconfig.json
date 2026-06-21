@@ -5,6 +5,10 @@
     "declaration": true,
     "outDir": "dist",
     "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@oracle/domain": ["../domain/src"]
+    },
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
     "types": ["node", "vitest/globals"]
   },

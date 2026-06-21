@@ -1,4 +1,4 @@
-import type { NormalizedSignal, SignalSeverity } from "../signals";
+import type { NormalizedSignal, SignalCategory, SignalSeverity } from "../signals";
 
 const SEVERITY_WEIGHT = {
   minor: 5, moderate: 15, significant: 30, severe: 60, extreme: 90,
@@ -13,12 +13,17 @@ export type RiskScore = {
   readonly contributingSignals: number;
 };
 
+export const RISK_EXCLUDED_CATEGORIES: readonly SignalCategory[] = ["space-weather"];
+
 export function scoreSignals(signals: readonly NormalizedSignal[]): RiskScore {
-  if (signals.length === 0) {
+  const excluded = RISK_EXCLUDED_CATEGORIES as readonly string[];
+  const scorable = signals.filter((s) => !excluded.includes(s.category));
+
+  if (scorable.length === 0) {
     return { score: 0, level: "quiet", worstSeverity: null, contributingSignals: 0 };
   }
 
-  const [worst, ...rest] = [...signals].sort(
+  const [worst, ...rest] = [...scorable].sort(
     (a, b) => SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity],
   );
 
@@ -39,6 +44,6 @@ export function scoreSignals(signals: readonly NormalizedSignal[]): RiskScore {
             : score >= 1 ? "watch"
               : "quiet",
     worstSeverity: worst.severity,
-    contributingSignals: signals.length,
+    contributingSignals: scorable.length,
   };
 }
