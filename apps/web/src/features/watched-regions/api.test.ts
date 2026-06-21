@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { WATCHED_REGIONS_PATH, fetchWatchedRegions, watchRegion, unwatchRegion } from "./api";
+import {
+  WATCHED_REGIONS_PATH,
+  fetchWatchedRegions,
+  watchRegion,
+  unwatchRegion,
+  fetchChangeReport,
+} from "./api";
 
 const regionSearchResult = {
   id: "country:ke",
@@ -127,5 +133,89 @@ describe("unwatchRegion", () => {
         );
       }),
     ).rejects.toThrow("Watched region not found");
+  });
+});
+
+const sampleReport = {
+  generatedAt: "2026-01-01T12:00:00.000Z",
+  newSignals: [
+    { dedupeKey: "usgs:abc", severity: "severe", category: "earthquake", occurredAt: "2026-01-01T11:00:00.000Z" },
+  ],
+  expiredSignals: [
+    { dedupeKey: "usgs:def", severity: "minor", category: "weather", occurredAt: null },
+  ],
+  severityChanges: [
+    { dedupeKey: "usgs:ghi", severity: "extreme", category: "earthquake", occurredAt: "2026-01-01T10:00:00.000Z", fromSeverity: "severe" },
+  ],
+  riskMovement: { fromScore: 15, toScore: 42, fromLevel: "watch", toLevel: "elevated" },
+};
+
+describe("fetchChangeReport", () => {
+  it("calls the change-report path with an encoded region ID", async () => {
+    const calls: Array<RequestInfo | URL> = [];
+    const fetcher = async (input: RequestInfo | URL) => {
+      calls.push(input);
+      return Response.json({ changeReport: null });
+    };
+
+    await fetchChangeReport("group:eastern-africa", fetcher);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].toString()).toContain(
+      `${WATCHED_REGIONS_PATH}/group%3Aeastern-africa/change-report`,
+    );
+  });
+
+  it("parses a populated report", async () => {
+    const result = await fetchChangeReport("country:ke", async () => {
+      return Response.json({ changeReport: sampleReport });
+    });
+
+    expect(result).toEqual(sampleReport);
+  });
+
+  it("parses changeReport: null", async () => {
+    const result = await fetchChangeReport("country:ke", async () => {
+      return Response.json({ changeReport: null });
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("throws on 404 with server error message", async () => {
+    await expect(
+      fetchChangeReport("country:ke", async () => {
+        return Response.json(
+          { error: { code: "watched_region_not_found", message: "Watched region not found" } },
+          { status: 404 },
+        );
+      }),
+    ).rejects.toThrow("Watched region not found");
+  });
+
+  it("rejects a malformed response", async () => {
+    await expect(
+      fetchChangeReport("country:ke", async () => {
+        return Response.json({ changeReport: { generatedAt: 123 } });
+      }),
+    ).rejects.toThrow("Change report returned an invalid response");
+  });
+
+  it("rejects a report with invalid enum values", async () => {
+    await expect(
+      fetchChangeReport("country:ke", async () => {
+        return Response.json({
+          changeReport: {
+            generatedAt: "2026-01-01T00:00:00.000Z",
+            newSignals: [
+              { dedupeKey: "x", severity: "banana", category: "earthquake", occurredAt: null },
+            ],
+            expiredSignals: [],
+            severityChanges: [],
+            riskMovement: null,
+          },
+        });
+      }),
+    ).rejects.toThrow("Change report returned an invalid response");
   });
 });

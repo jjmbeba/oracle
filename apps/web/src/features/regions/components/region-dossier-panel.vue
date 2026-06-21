@@ -8,6 +8,7 @@ import {
   type FactRow,
 } from "../region-ui";
 import RegionActiveSignals from "./region-active-signals.vue";
+import RegionChangeReport from "./region-change-report.vue";
 import RegionRiskSummary from "./region-risk-summary.vue";
 import { computed } from "vue";
 
@@ -91,6 +92,8 @@ const factSourceLabels = computed<readonly string[]>(
       <region-risk-summary :selected-region="selectedRegion" />
 
       <region-active-signals :selected-region="selectedRegion" />
+
+      <region-change-report v-if="isWatched" :selected-region="selectedRegion" />
     </div>
   </section>
 </template>
