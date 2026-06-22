@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "dev": "concurrently \"pnpm --filter @oracle/web dev\" \"pnpm --filter @oracle/api dev\" \"pnpm --filter @oracle/worker dev\"",
+    "dev": "pnpm --filter @oracle/db build && concurrently \"pnpm --filter @oracle/web dev\" \"pnpm --filter @oracle/api dev\" \"pnpm --filter @oracle/worker dev\"",
     "build": "pnpm -r --if-present build",
     "type-check": "pnpm -r --if-present type-check",
     "lint": "pnpm -r --if-present lint",

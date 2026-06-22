@@ -101,7 +101,7 @@ export function createIngestionJob(
             sourceUrl: raw.url,
             jobName: name,
             httpStatus: raw.response.status,
-            payload: raw.data,
+            payload: raw.data as any,
             fetchedAt,
           });
         } catch (error: unknown) {
