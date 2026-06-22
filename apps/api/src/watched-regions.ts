@@ -1,11 +1,23 @@
 import { getLatestChangeReport, watchedRegion } from "@oracle/db";
 import type { ChangeReportRow } from "@oracle/db";
-import { getRegionById, isRegionId, toRegionSearchResult, type RegionId } from "@oracle/domain";
+import {
+  changeReportEntrySchema,
+  getRegionById,
+  isRegionId,
+  regionSearchResultSchema,
+  riskMovementSchema,
+  severityChangeEntrySchema,
+  toRegionSearchResult,
+  type ChangeReportEntry,
+  type RegionId,
+  type SeverityChangeEntry,
+} from "@oracle/domain";
 import { and, count, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { Hono } from "hono";
 import type { MiddlewareHandler } from "hono";
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import type { AppBindings } from "./auth-middleware";
 import { getAuthenticatedUser } from "./auth-middleware";
 
@@ -178,6 +190,38 @@ export function createWatchedRegionsRoutes(options: WatchedRegionsOptions) {
 
   return router;
 }
+
+export const watchedRegionResponseSchema = z
+  .object({
+    id: z.string(),
+    regionId: z.string(),
+    region: regionSearchResultSchema.nullable(),
+    createdAt: z.string(),
+  })
+  .strict();
+
+export const watchedRegionsListResponseSchema = z
+  .object({ watchedRegions: z.array(watchedRegionResponseSchema) })
+  .strict();
+
+export const watchedRegionPostResponseSchema = z
+  .object({ watchedRegion: watchedRegionResponseSchema })
+  .strict();
+
+export const changeReportResponseSchema = z
+  .object({
+    generatedAt: z.string(),
+    // ponytail: Zod v4 $strict brand incompatible with z.array — cast required
+    newSignals: z.array(changeReportEntrySchema as z.ZodType<ChangeReportEntry>),
+    expiredSignals: z.array(changeReportEntrySchema as z.ZodType<ChangeReportEntry>),
+    severityChanges: z.array(severityChangeEntrySchema as z.ZodType<SeverityChangeEntry>),
+    riskMovement: riskMovementSchema.nullable(),
+  })
+  .strict();
+
+export const changeReportGetResponseSchema = z
+  .object({ changeReport: changeReportResponseSchema.nullable() })
+  .strict();
 
 function toWatchedRegionResponse(row: WatchedRegionRow) {
   return enrichWatchedRegion(row.id, row.regionId, row.createdAt);

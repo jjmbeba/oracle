@@ -12,7 +12,7 @@ export {
 } from "./catalog";
 export { getRegionDossier, aggregateMemberFacts } from "./dossier";
 export { matchSignalsToRegion } from "./signal-matching";
-export { regionIdSchema } from "./schemas";
+export { factSourceSchema, regionDossierSchema, regionIdSchema, regionSearchResultSchema } from "./schemas";
 export { searchRegions, toRegionSearchResult, type RegionSearchResult } from "./search";
 export type {
   Continent,

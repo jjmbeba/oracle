@@ -1,10 +1,15 @@
+import { z } from "zod";
+import { signalSeveritySchema } from "../signals/schemas";
 import type { NormalizedSignal, SignalCategory, SignalSeverity } from "../signals";
 
 const SEVERITY_WEIGHT = {
   minor: 5, moderate: 15, significant: 30, severe: 60, extreme: 90,
 } as const satisfies Record<SignalSeverity, number>;
 
-export type RiskLevel = "quiet" | "watch" | "elevated" | "high" | "critical";
+export const riskLevelValues = ["quiet", "watch", "elevated", "high", "critical"] as const;
+export type RiskLevel = (typeof riskLevelValues)[number];
+
+export const riskLevelSchema = z.enum(riskLevelValues);
 
 export type RiskScore = {
   readonly score: number;
@@ -12,6 +17,15 @@ export type RiskScore = {
   readonly worstSeverity: SignalSeverity | null;
   readonly contributingSignals: number;
 };
+
+export const riskScoreSchema = z
+  .object({
+    score: z.number().min(0).max(100),
+    level: riskLevelSchema,
+    worstSeverity: signalSeveritySchema.nullable(),
+    contributingSignals: z.number().int().min(0),
+  })
+  .strict();
 
 export const RISK_EXCLUDED_CATEGORIES: readonly SignalCategory[] = ["space-weather"];
 

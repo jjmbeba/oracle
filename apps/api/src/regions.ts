@@ -4,13 +4,19 @@ import {
   getRegionMemberCountryIds,
   isRegionId,
   matchSignalsToRegion,
+  normalizedSignalSchema,
+  regionDossierSchema,
+  regionSearchResultSchema,
+  riskScoreSchema,
   scoreSignals,
   searchRegions,
   toRegionSearchResult,
+  type NormalizedSignal,
   type SignalCategory,
 } from "@oracle/domain";
 import { Hono } from "hono";
-import { SIGNAL_WINDOW_MS, type SignalFeedStore } from "./signals";
+import { z } from "zod";
+import { SIGNAL_WINDOW_MS, freshnessEntrySchema, type SignalFeedStore } from "./signals";
 
 const regionNotFound = () =>
   Response.json(
@@ -125,6 +131,26 @@ export function createRegionActiveSignalsRoutes(options: ActiveSignalsRoutesOpti
 
   return router;
 }
+
+export const dossierResponseSchema = z
+  .object({ dossier: regionDossierSchema })
+  .strict();
+
+export const regionActiveSignalsResponseSchema = z
+  .object({
+    region: regionSearchResultSchema,
+    // ponytail: Zod v4 $strict brand incompatible with z.array — cast required
+    signals: z.array(normalizedSignalSchema as z.ZodType<NormalizedSignal>),
+    freshness: z.array(freshnessEntrySchema),
+  })
+  .strict();
+
+export const regionRiskResponseSchema = z
+  .object({
+    region: regionSearchResultSchema,
+    risk: riskScoreSchema,
+  })
+  .strict();
 
 export function createRegionRiskRoutes(options: { store: SignalFeedStore }) {
   const router = new Hono();
