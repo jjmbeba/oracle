@@ -192,24 +192,25 @@ export async function upsertProviderFreshness(
 
 export async function queryProviderFreshness(
   db: Database,
-  providerName: string,
-  category: SignalCategory,
-): Promise<ProviderFreshness | null> {
-  const [row] = await db
+  keys: ReadonlyArray<{ provider: string; category: SignalCategory }>,
+): Promise<ProviderFreshness[]> {
+  if (keys.length === 0) return [];
+
+  const pf = providerFreshness;
+  const rows = await db
     .select()
-    .from(providerFreshness)
+    .from(pf)
     .where(
-      and(eq(providerFreshness.provider, providerName), eq(providerFreshness.category, category))!,
-    )
-    .limit(1);
+      or(
+        ...keys.map((k) => and(eq(pf.provider, k.provider), eq(pf.category, k.category))!),
+      )!,
+    );
 
-  if (!row) return null;
-
-  return {
+  return rows.map((row) => ({
     provider: row.provider,
     category: row.category as SignalCategory,
     lastSuccessfulPollAt: row.lastSuccessfulPollAt,
-  };
+  }));
 }
 
 export async function querySignals(

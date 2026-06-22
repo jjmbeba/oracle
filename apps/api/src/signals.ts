@@ -16,14 +16,16 @@ export const SIGNAL_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export type SignalFeedStore = {
   queryFeed(category: SignalCategory, since: Date): Promise<NormalizedSignal[]>;
-  queryFreshness(provider: string, category: SignalCategory): Promise<ProviderFreshness | null>;
+  queryProviderFreshness: (
+    keys: ReadonlyArray<{ provider: string; category: SignalCategory }>,
+  ) => Promise<ProviderFreshness[]>;
   queryAllInWindow(since: Date): Promise<NormalizedSignal[]>;
 };
 
 export function createDrizzleSignalFeedStore(db: Database): SignalFeedStore {
   return {
     queryFeed: (category, since) => querySignalFeed(db, { category, since }),
-    queryFreshness: (provider, category) => queryProviderFreshness(db, provider, category),
+    queryProviderFreshness: (keys) => queryProviderFreshness(db, keys),
     queryAllInWindow: (since) => querySignals(db, { since }),
   };
 }
@@ -37,6 +39,14 @@ type FreshnessResponse = {
   category: SignalCategory;
   lastSuccessfulPollAt: string;
 };
+
+export function toFreshnessResponse(entry: ProviderFreshness): FreshnessResponse {
+  return {
+    provider: entry.provider,
+    category: entry.category,
+    lastSuccessfulPollAt: entry.lastSuccessfulPollAt.toISOString(),
+  };
+}
 
 export const freshnessEntrySchema = z.object({
   provider: z.string().trim().min(1),
@@ -109,21 +119,9 @@ export function createSignalFeedRoutes(options: SignalFeedOptions) {
 
     const providers = [...new Set(signals.map((s) => s.provider))];
 
-    const freshnessEntries = await Promise.all(
-      providers.map((p) => store.queryFreshness(p, category)),
-    );
-
-    const freshness: FreshnessResponse[] = [];
-
-    for (const entry of freshnessEntries) {
-      if (entry) {
-        freshness.push({
-          provider: entry.provider,
-          category: entry.category,
-          lastSuccessfulPollAt: entry.lastSuccessfulPollAt.toISOString(),
-        });
-      }
-    }
+    const freshness = (await store.queryProviderFreshness(
+      providers.map((p) => ({ provider: p, category })),
+    )).map(toFreshnessResponse);
 
     return c.json({ signals, freshness });
   });

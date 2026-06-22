@@ -26,12 +26,16 @@ function makeSignal(overrides: Partial<NormalizedSignal>): NormalizedSignal {
 
 function signalFeedApp(
   signals: NormalizedSignal[],
-  freshness?: ProviderFreshness | null,
+  freshnessFor?:
+    | ((
+        keys: ReadonlyArray<{ provider: string; category: string }>,
+      ) => ProviderFreshness[])
+    | null,
   activeSignals?: NormalizedSignal[],
 ) {
   const store: SignalFeedStore = {
     queryFeed: async () => signals,
-    queryFreshness: async () => freshness ?? null,
+    queryProviderFreshness: async (keys) => (freshnessFor ? freshnessFor(keys) : []),
     queryAllInWindow: async () => activeSignals ?? signals,
   };
   return createApp({ signals: store });
@@ -279,11 +283,13 @@ describe("api shell", () => {
 describe("signal feed", () => {
   it("returns signals and freshness for a valid category", async () => {
     const signal = makeSignal({ title: "M 5.2 Test" });
-    const testApp = signalFeedApp([signal], {
-      provider: "test-provider",
-      category: "earthquake",
-      lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
-    });
+    const testApp = signalFeedApp([signal], () => [
+      {
+        provider: "test-provider",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+      },
+    ]);
 
     const response = await testApp.request("/signals/feed?category=earthquake");
 
@@ -354,6 +360,39 @@ describe("signal feed", () => {
     expect(body.signals[1].title).toBe("Signal B");
   });
 
+  it("calls queryProviderFreshness with one entry per distinct provider", async () => {
+    const signalA = makeSignal({
+      dedupeKey: "signal:earthquake:prov-a:provider-native:a1",
+      provider: "prov-a",
+    });
+    const signalB = makeSignal({
+      dedupeKey: "signal:earthquake:prov-b:provider-native:b1",
+      provider: "prov-b",
+    });
+    const signalADup = makeSignal({
+      dedupeKey: "signal:earthquake:prov-a:provider-native:a2",
+      provider: "prov-a",
+    });
+    const seenKeys: ReadonlyArray<{ provider: string; category: string }>[] = [];
+    const testApp = signalFeedApp([signalA, signalB, signalADup], (keys) => {
+      seenKeys.push(keys);
+      return keys.map((k) => ({
+        provider: k.provider,
+        category: k.category,
+        lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+      }));
+    });
+
+    const response = await testApp.request("/signals/feed?category=earthquake");
+
+    expect(response.status).toBe(200);
+    expect(seenKeys).toHaveLength(1);
+    expect(seenKeys[0]).toEqual([
+      { provider: "prov-a", category: "earthquake" },
+      { provider: "prov-b", category: "earthquake" },
+    ]);
+  });
+
   it("includes per-provider freshness when signals exist", async () => {
     const signalA = makeSignal({
       dedupeKey: "signal:earthquake:prov-a:provider-native:a",
@@ -367,16 +406,14 @@ describe("signal feed", () => {
     });
     const store: SignalFeedStore = {
       queryFeed: async () => [signalA, signalB],
-      queryFreshness: async (provider) => {
-        if (provider === "prov-a") {
-          return {
-            provider: "prov-a",
-            category: "earthquake",
+      queryProviderFreshness: async (keys) =>
+        keys
+          .filter((k) => k.provider === "prov-a")
+          .map((k) => ({
+            provider: k.provider,
+            category: k.category,
             lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
-          };
-        }
-        return null;
-      },
+          })),
     };
     const testApp = createApp({ signals: store });
 
@@ -406,11 +443,13 @@ describe("signal feed", () => {
         label: "NOAA SWPC Alert",
       },
     };
-    const testApp = signalFeedApp([swpcSignal], {
-      provider: "noaa-swpc",
-      category: "space-weather",
-      lastSuccessfulPollAt: new Date("2026-06-13T21:01:35Z"),
-    });
+    const testApp = signalFeedApp([swpcSignal], () => [
+      {
+        provider: "noaa-swpc",
+        category: "space-weather",
+        lastSuccessfulPollAt: new Date("2026-06-13T21:01:35Z"),
+      },
+    ]);
 
     const response = await testApp.request("/signals/feed?category=space-weather");
 
@@ -704,7 +743,7 @@ describe("region active signals", () => {
     expect(body.error.code).toBe("region_not_found");
   });
 
-  it("fetches signals and freshness in parallel", async () => {
+  it("fetches signals before freshness", async () => {
     const order: string[] = [];
     const regionSignal = makeSignal({
       provider: "usgs",
@@ -717,13 +756,15 @@ describe("region active signals", () => {
         order.push("feed");
         return [];
       },
-      queryFreshness: async () => {
+      queryProviderFreshness: async () => {
         order.push("freshness");
-        return {
-          provider: "usgs",
-          category: "earthquake",
-          lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
-        };
+        return [
+          {
+            provider: "usgs",
+            category: "earthquake",
+            lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+          },
+        ];
       },
       queryAllInWindow: async () => {
         order.push("active");
@@ -748,11 +789,13 @@ describe("region active signals", () => {
     });
     const testApp = signalFeedApp(
       [],
-      {
-        provider: "usgs",
-        category: "earthquake",
-        lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
-      },
+      () => [
+        {
+          provider: "usgs",
+          category: "earthquake",
+          lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+        },
+      ],
       [signal],
     );
 
@@ -768,6 +811,53 @@ describe("region active signals", () => {
       category: "earthquake",
       lastSuccessfulPollAt: "2026-06-18T12:00:00.000Z",
     });
+  });
+
+  it("calls queryProviderFreshness once with one entry per signal (no JS dedup)", async () => {
+    const regionSignal = makeSignal({
+      dedupeKey: "sig:bulk:a1",
+      provider: "prov-a",
+      title: "Region signal A",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const globalSignal = makeSignal({
+      dedupeKey: "sig:bulk:swpc",
+      provider: "noaa-swpc",
+      title: "Global SWPC",
+      category: "space-weather",
+      scope: { kind: "global" },
+    });
+    const regionSignalDup = makeSignal({
+      dedupeKey: "sig:bulk:a2",
+      provider: "prov-a",
+      title: "Region signal A dup",
+      scope: { kind: "region", regionId: "country:ke" },
+    });
+    const seenKeys: ReadonlyArray<{ provider: string; category: string }>[] = [];
+    const testApp = signalFeedApp([], (keys) => {
+      seenKeys.push(keys);
+      const unique = new Map<string, { provider: string; category: string }>();
+      for (const k of keys) unique.set(`${k.provider}:${k.category}`, k);
+      return [...unique.values()].map((k) => ({
+        provider: k.provider,
+        category: k.category,
+        lastSuccessfulPollAt: new Date("2026-06-18T12:00:00Z"),
+      }));
+    }, [regionSignal, globalSignal, regionSignalDup]);
+
+    const response = await testApp.request("/regions/country:ke/active-signals");
+
+    expect(response.status).toBe(200);
+    expect(seenKeys).toHaveLength(1);
+    expect(seenKeys[0]).toEqual([
+      { provider: "prov-a", category: "earthquake" },
+      { provider: "noaa-swpc", category: "space-weather" },
+      { provider: "prov-a", category: "earthquake" },
+    ]);
+    const providers = (
+      await response.json()
+    ).freshness.map((f: { provider: string }) => f.provider);
+    expect(providers).toHaveLength(2);
   });
 });
 
