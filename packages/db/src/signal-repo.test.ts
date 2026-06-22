@@ -509,22 +509,75 @@ describe("signal repo", () => {
   });
 
   describe("provider freshness", () => {
-    itIfDb("inserts and reads freshness for a provider and category", async () => {
+    it("returns empty array for empty input without hitting the database", async () => {
+      const read = await queryProviderFreshness(db, []);
+      expect(read).toEqual([]);
+    });
+
+    itIfDb("reads freshness for a list of (provider, category) keys", async () => {
       await upsertProviderFreshness(db, {
         provider: "usgs",
         category: "earthquake",
         lastSuccessfulPollAt: new Date("2026-06-01T12:00:00Z"),
       });
+      await upsertProviderFreshness(db, {
+        provider: "noaa-swpc",
+        category: "space-weather",
+        lastSuccessfulPollAt: new Date("2026-06-02T00:00:00Z"),
+      });
 
-      const read = await queryProviderFreshness(db, "usgs", "earthquake");
+      const read = await queryProviderFreshness(db, [
+        { provider: "usgs", category: "earthquake" },
+        { provider: "noaa-swpc", category: "space-weather" },
+      ]);
 
-      expect(read).not.toBeNull();
-      expect(read!.provider).toBe("usgs");
-      expect(read!.category).toBe("earthquake");
-      expect(read!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-01T12:00:00.000Z");
+      expect(read).toHaveLength(2);
+      const usgs = read.find((r) => r.provider === "usgs");
+      const swpc = read.find((r) => r.provider === "noaa-swpc");
+      expect(usgs).toBeDefined();
+      expect(usgs!.category).toBe("earthquake");
+      expect(usgs!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-01T12:00:00.000Z");
+      expect(swpc).toBeDefined();
+      expect(swpc!.category).toBe("space-weather");
+      expect(swpc!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-02T00:00:00.000Z");
     });
 
-    itIfDb("updates existing freshness on conflict", async () => {
+    itIfDb("omits keys with no matching row from the result", async () => {
+      await upsertProviderFreshness(db, {
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-01T00:00:00Z"),
+      });
+
+      const read = await queryProviderFreshness(db, [
+        { provider: "usgs", category: "earthquake" },
+        { provider: "nonexistent", category: "earthquake" },
+      ]);
+
+      expect(read).toHaveLength(1);
+      expect(read[0].provider).toBe("usgs");
+    });
+
+    itIfDb("supports a single-key call (1-element array) for the feed route shape", async () => {
+      await upsertProviderFreshness(db, {
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-01T00:00:00Z"),
+      });
+
+      const read = await queryProviderFreshness(db, [
+        { provider: "usgs", category: "earthquake" },
+      ]);
+
+      expect(read).toHaveLength(1);
+      expect(read[0]).toEqual({
+        provider: "usgs",
+        category: "earthquake",
+        lastSuccessfulPollAt: new Date("2026-06-01T00:00:00.000Z"),
+      });
+    });
+
+    itIfDb("reflects upsert updates on the next read", async () => {
       await upsertProviderFreshness(db, {
         provider: "openweather",
         category: "weather",
@@ -537,34 +590,10 @@ describe("signal repo", () => {
         lastSuccessfulPollAt: new Date("2026-06-15T00:00:00Z"),
       });
 
-      const read = await queryProviderFreshness(db, "openweather", "weather");
-      expect(read!.lastSuccessfulPollAt.toISOString()).toBe("2026-06-15T00:00:00.000Z");
-    });
-
-    itIfDb("returns null for unknown provider or category", async () => {
-      const read = await queryProviderFreshness(db, "nonexistent", "earthquake");
-      expect(read).toBeNull();
-    });
-
-    itIfDb("separates freshness by composite key", async () => {
-      await upsertProviderFreshness(db, {
-        provider: "usgs",
-        category: "earthquake",
-        lastSuccessfulPollAt: new Date("2026-06-01T00:00:00Z"),
-      });
-
-      await upsertProviderFreshness(db, {
-        provider: "noaa-swpc",
-        category: "space-weather",
-        lastSuccessfulPollAt: new Date("2026-06-02T00:00:00Z"),
-      });
-
-      const usgs = await queryProviderFreshness(db, "usgs", "earthquake");
-      const swpc = await queryProviderFreshness(db, "noaa-swpc", "space-weather");
-
-      expect(usgs!.lastSuccessfulPollAt.getTime()).toBeLessThan(
-        swpc!.lastSuccessfulPollAt.getTime(),
-      );
+      const read = await queryProviderFreshness(db, [
+        { provider: "openweather", category: "weather" },
+      ]);
+      expect(read[0].lastSuccessfulPollAt.toISOString()).toBe("2026-06-15T00:00:00.000Z");
     });
   });
 });
