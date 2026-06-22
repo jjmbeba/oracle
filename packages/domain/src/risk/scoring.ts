@@ -23,7 +23,7 @@ export const riskScoreSchema = z
     score: z.number().min(0).max(100),
     level: riskLevelSchema,
     worstSeverity: signalSeveritySchema.nullable(),
-    contributingSignals: z.number().min(0),
+    contributingSignals: z.number().int().min(0),
   })
   .strict();
 

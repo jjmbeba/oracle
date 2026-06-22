@@ -7,6 +7,7 @@ export const regionIdSchema = z.string().refine((value): value is RegionId => is
 });
 
 const nonEmptyString = z.string().trim().min(1);
+const isoAlpha2 = z.string().regex(/^[A-Z]{2}$/, "Invalid ISO 3166-1 alpha-2 code");
 
 export const factSourceSchema = z
   .object({
@@ -46,7 +47,7 @@ const countrySearchResultSchema = z
     id: regionIdSchema,
     kind: z.literal("country"),
     displayName: nonEmptyString,
-    alpha2: z.string(),
+    alpha2: isoAlpha2,
   })
   .strict();
 
@@ -54,7 +55,7 @@ const groupSearchResultBase = {
   id: regionIdSchema,
   displayName: nonEmptyString,
   memberCountryIds: z.array(regionIdSchema),
-  memberCount: z.number().min(0),
+  memberCount: z.number().int().min(0),
 } as const;
 
 const countryGroupSearchResultSchema = z
@@ -76,7 +77,7 @@ const countryDossierRegionSchema = z
     kind: z.literal("country"),
     id: regionIdSchema,
     displayName: nonEmptyString,
-    alpha2: z.string(),
+    alpha2: isoAlpha2,
   })
   .strict();
 
@@ -93,7 +94,7 @@ const groupDossierRegionSchema = z
     kind: z.literal("country-group"),
     id: regionIdSchema,
     displayName: nonEmptyString,
-    memberCount: z.number().min(0),
+    memberCount: z.number().int().min(0),
   })
   .strict();
 
@@ -102,7 +103,7 @@ const continentDossierRegionSchema = z
     kind: z.literal("continent"),
     id: regionIdSchema,
     displayName: nonEmptyString,
-    memberCount: z.number().min(0),
+    memberCount: z.number().int().min(0),
   })
   .strict();
 
