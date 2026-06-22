@@ -211,6 +211,7 @@ export const watchedRegionPostResponseSchema = z
 export const changeReportResponseSchema = z
   .object({
     generatedAt: z.string(),
+    // ponytail: Zod v4 $strict brand incompatible with z.array — cast required
     newSignals: z.array(changeReportEntrySchema as z.ZodType<ChangeReportEntry>),
     expiredSignals: z.array(changeReportEntrySchema as z.ZodType<ChangeReportEntry>),
     severityChanges: z.array(severityChangeEntrySchema as z.ZodType<SeverityChangeEntry>),

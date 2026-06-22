@@ -92,15 +92,9 @@ export const changeReportEntrySchema = z
   })
   .strict();
 
-export const severityChangeEntrySchema = z
-  .object({
-    dedupeKey: z.string().trim().min(1),
-    severity: signalSeveritySchema,
-    category: signalCategorySchema,
-    occurredAt: z.string().nullable(),
-    fromSeverity: signalSeveritySchema,
-  })
-  .strict();
+export const severityChangeEntrySchema = changeReportEntrySchema.extend({
+  fromSeverity: signalSeveritySchema,
+}).strict();
 
 export const riskMovementSchema = z
   .object({

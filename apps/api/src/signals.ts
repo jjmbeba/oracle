@@ -38,50 +38,43 @@ type FreshnessResponse = {
   lastSuccessfulPollAt: string;
 };
 
-export const freshnessEntrySchema = z
-  .object({
-    provider: z.string().trim().min(1),
-    category: z.string().trim().min(1),
-    lastSuccessfulPollAt: z.string(),
-  })
-  .strict();
+export const freshnessEntrySchema = z.object({
+  provider: z.string().trim().min(1),
+  category: z.string().trim().min(1),
+  lastSuccessfulPollAt: z.string(),
+});
 
 export const signalFeedResponseSchema = z
   .object({
+    // ponytail: Zod v4 $strict brand incompatible with z.array — cast required
     signals: z.array(normalizedSignalSchema as z.ZodType<NormalizedSignal>),
-    freshness: z.array(freshnessEntrySchema as z.ZodType),
+    freshness: z.array(freshnessEntrySchema),
   })
   .strict();
 
-const pointFeatureSchema = z
-  .object({
-    type: z.literal("Feature"),
-    id: z.string(),
-    geometry: z
-      .object({
-        type: z.literal("Point"),
-        coordinates: z.tuple([z.number(), z.number()]),
-      })
-      .strict(),
-    properties: z
-      .object({
-        provider: z.string(),
-        category: z.string(),
-        title: z.string(),
-        severity: z.string(),
-        confidence: z.string(),
-        effectiveAt: z.string(),
-        sourceLinkUrl: z.string().optional(),
-        sourceLinkLabel: z.string().optional(),
-      })
-      .strict(),
-  })
-  .strict();
+const pointFeatureSchema = z.object({
+  type: z.literal("Feature"),
+  id: z.string(),
+  geometry: z.object({
+    type: z.literal("Point"),
+    coordinates: z.tuple([z.number(), z.number()]),
+  }),
+  properties: z.object({
+    provider: z.string(),
+    category: z.string(),
+    title: z.string(),
+    severity: z.string(),
+    confidence: z.string(),
+    effectiveAt: z.string(),
+    sourceLinkUrl: z.string().optional(),
+    sourceLinkLabel: z.string().optional(),
+  }),
+});
 
 export const signalMapResponseSchema = z
   .object({
     type: z.literal("FeatureCollection"),
-    features: z.array(pointFeatureSchema as z.ZodType),
+    features: z.array(pointFeatureSchema),
   })
   .strict();
 

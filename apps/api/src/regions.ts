@@ -139,8 +139,9 @@ export const dossierResponseSchema = z
 export const regionActiveSignalsResponseSchema = z
   .object({
     region: regionSearchResultSchema,
+    // ponytail: Zod v4 $strict brand incompatible with z.array — cast required
     signals: z.array(normalizedSignalSchema as z.ZodType<NormalizedSignal>),
-    freshness: z.array(freshnessEntrySchema as z.ZodType),
+    freshness: z.array(freshnessEntrySchema),
   })
   .strict();
 
